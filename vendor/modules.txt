@@ -1,0 +1,26 @@
+# github.com/connctd/api-go v0.0.1
+## explicit; go 1.14
+github.com/connctd/api-go
+github.com/connctd/api-go/crypto
+# github.com/connctd/connector-go v0.0.0-20210826081925-40807b693708
+## explicit; go 1.14
+github.com/connctd/connector-go
+# github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2
+## explicit; go 1.14
+github.com/connctd/restapi-go
+# github.com/go-logr/logr v0.3.0
+## explicit; go 1.14
+github.com/go-logr/logr
+# github.com/go-logr/stdr v0.3.0
+## explicit
+github.com/go-logr/stdr
+# github.com/gorilla/mux v1.8.0
+## explicit; go 1.12
+github.com/gorilla/mux
+# github.com/sirupsen/logrus v1.8.1
+## explicit; go 1.13
+github.com/sirupsen/logrus
+# golang.org/x/sys v0.0.0-20191026070338-33540a1f6037
+## explicit; go 1.12
+golang.org/x/sys/unix
+golang.org/x/sys/windows
