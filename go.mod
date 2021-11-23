@@ -11,7 +11,14 @@ require (
 require (
 	github.com/connctd/api-go v0.0.1 // indirect
 	github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2 // indirect
+	github.com/db-journey/mysql-driver v1.0.1
 	github.com/go-logr/logr v0.3.0 // indirect
 	github.com/go-logr/stdr v0.3.0 // indirect
+	github.com/jmoiron/sqlx v1.3.4
 	golang.org/x/sys v0.0.0-20191026070338-33540a1f6037 // indirect
+)
+
+require (
+	github.com/db-journey/migrate/v2 v2.0.4 // indirect
+	github.com/go-sql-driver/mysql v1.5.0 // indirect
 )

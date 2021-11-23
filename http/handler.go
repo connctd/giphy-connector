@@ -19,8 +19,34 @@ func handleInstallation(service giphy.Service) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		if err = json.Unmarshal(body, req); err != nil {
+		if err = json.Unmarshal(body, &req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		response, err := service.AddInstallation(r.Context(), req)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Installation was successfull so far but we require further steps
+		if response != nil {
+			// We add the further steps and details to the response
+			// We set the status code to accepted
+			// This signals the connctd platform, that the installation is ongoing
+			w.WriteHeader(http.StatusAccepted)
+			// As a good citizen we also set an appropriate content type
+			w.Header().Add("Content-Type", "application/json")
+
+			b, err := json.Marshal(response)
+			if err != nil {
+				// Abort if we cannot marshal the response
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("{\"err\":\"Failed to marshal error\"}"))
+			} else {
+				w.Write(b)
+			}
 			return
 		}
 
@@ -40,12 +66,16 @@ func handleInstantiation(service giphy.Service) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		if err = json.Unmarshal(body, req); err != nil {
+		if err = json.Unmarshal(body, &req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		// TODO: let the connector handle the new instantiation
+		if err := service.AddInstance(r.Context(), req); err != nil {
+			// Something went wrong on our side
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
 		w.WriteHeader(http.StatusCreated)
 	})
@@ -61,7 +91,7 @@ func handleAction(service giphy.Service) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		if err = json.Unmarshal(body, req); err != nil {
+		if err = json.Unmarshal(body, &req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}

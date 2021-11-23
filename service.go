@@ -15,3 +15,8 @@ type ConnectorProtocol interface {
 	AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error
 	HandleAction(ctx context.Context, actionRequest connector.ActionRequest) error
 }
+
+type Database interface {
+	AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) error
+	AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error
+}

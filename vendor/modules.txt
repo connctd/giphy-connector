@@ -8,15 +8,30 @@ github.com/connctd/connector-go
 # github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2
 ## explicit; go 1.14
 github.com/connctd/restapi-go
+# github.com/db-journey/migrate/v2 v2.0.4
+## explicit; go 1.13
+github.com/db-journey/migrate/v2/direction
+github.com/db-journey/migrate/v2/driver
+github.com/db-journey/migrate/v2/file
+# github.com/db-journey/mysql-driver v1.0.1
+## explicit; go 1.13
+github.com/db-journey/mysql-driver
 # github.com/go-logr/logr v0.3.0
 ## explicit; go 1.14
 github.com/go-logr/logr
 # github.com/go-logr/stdr v0.3.0
 ## explicit
 github.com/go-logr/stdr
+# github.com/go-sql-driver/mysql v1.5.0
+## explicit; go 1.10
+github.com/go-sql-driver/mysql
 # github.com/gorilla/mux v1.8.0
 ## explicit; go 1.12
 github.com/gorilla/mux
+# github.com/jmoiron/sqlx v1.3.4
+## explicit; go 1.10
+github.com/jmoiron/sqlx
+github.com/jmoiron/sqlx/reflectx
 # github.com/sirupsen/logrus v1.8.1
 ## explicit; go 1.13
 github.com/sirupsen/logrus
