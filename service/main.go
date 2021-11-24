@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/connctd/connector-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,7 +19,7 @@ func main() {
 
 	backgroundCtx := context.Background()
 
-	// Request from the connctd platform are signed using the connector publication key
+	// Requests from the connctd platform are signed using the connector publication key
 	// To verify the signature, we need the coresponding public key, which we retrieve during connector publication
 	key := os.Getenv("GIPHY_CONNECTOR_PUBLIC_KEY")
 	if key == "" {
@@ -36,8 +37,13 @@ func main() {
 		panic("Failed to connect to database: " + err.Error())
 	}
 
+	connctdClient, err := connector.NewClient(nil, connector.DefaultLogger)
+	if err != nil {
+		panic("Failed to create connctd client: " + err.Error())
+	}
+
 	// Create a new instance of our connector
-	service := NewService(dbClient, logrus.WithField("component", "service"))
+	service := NewService(dbClient, connctdClient, logrus.WithField("component", "service"))
 
 	// Create a new HTTP handler using the service
 	httpHandler := ghttp.MakeHandler(backgroundCtx, publicKey, service)

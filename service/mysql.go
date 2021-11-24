@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"giphy-connector"
 
 	"github.com/connctd/connector-go"
 	_ "github.com/db-journey/mysql-driver"
@@ -13,7 +14,10 @@ import (
 var (
 	statementInsertInstallation = `INSERT INTO installations (id, token) VALUES (?, ?)`
 
-	statementInsertInstance = `INSERT INTO instances (id, installation_id, token) VALUES (?, ?, ?)`
+	statementInsertInstance  = `INSERT INTO instances (id, installation_id, token) VALUES (?, ?, ?)`
+	statementGetInstanceByID = `SELECT id, token from instances WHERE id = ?`
+
+	statementInsertThingId = `UPDATE instances SET thing_id = ? WHERE id = ?`
 )
 
 type DBClient struct {
@@ -48,6 +52,27 @@ func (m *DBClient) AddInstance(ctx context.Context, instantiationRequest connect
 	_, err := m.db.Exec(statementInsertInstance, instantiationRequest.ID, instantiationRequest.InstallationID, instantiationRequest.Token)
 	if err != nil {
 		return fmt.Errorf("failed to insert instance: %w", err)
+	}
+
+	return nil
+}
+
+// GetInstance returns the instance with the given id.
+func (m *DBClient) GetInstance(ctx context.Context, instanceId string) (*giphy.Instance, error) {
+	var result giphy.Instance
+	err := m.db.Get(&result, statementGetInstanceByID, instanceId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve instance: %w", err)
+	}
+
+	return &result, nil
+}
+
+// AddThingID updates the instance with the thing ID.
+func (m *DBClient) AddThingID(ctx context.Context, instanceId string, thingID string) error {
+	_, err := m.db.Exec(statementInsertThingId, thingID, instanceId)
+	if err != nil {
+		return fmt.Errorf("failed to insert thing id: %w", err)
 	}
 
 	return nil

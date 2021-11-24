@@ -11,15 +11,17 @@ import (
 // GiphyConnector provides the callback functions used by the HTTP handler
 // Later on it will implement the communication with the Giphy API
 type GiphyConnector struct {
-	logger logrus.FieldLogger
-	db     giphy.Database
+	logger        logrus.FieldLogger
+	db            giphy.Database
+	connctdClient connector.Client
 }
 
-// NewService returns an new instance of the Giphy connector
-func NewService(dbClient giphy.Database, logger logrus.FieldLogger) giphy.Service {
+// NewService returns a new instance of the Giphy connector
+func NewService(dbClient giphy.Database, connctdClient connector.Client, logger logrus.FieldLogger) giphy.Service {
 	return &GiphyConnector{
 		logger,
 		dbClient,
+		connctdClient,
 	}
 }
 
@@ -41,6 +43,11 @@ func (g *GiphyConnector) AddInstance(ctx context.Context, instantiationRequest c
 
 	if err := g.db.AddInstance(ctx, instantiationRequest); err != nil {
 		g.logger.WithError(err).Errorln("Failed to add instance")
+		return err
+	}
+
+	if err := g.CreateThing(ctx, instantiationRequest.ID); err != nil {
+		g.logger.WithError(err).Errorln("Failed to create new thing")
 		return err
 	}
 
