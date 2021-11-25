@@ -22,7 +22,7 @@ In a production environment, you can use a hosting provider of your choice.
 
 ### Connector
 
-Conceptionally a connector consists of two parts: 
+Conceptionally a connector consists of two parts:
 
 1. A HTTP handler, that provides endpoints for the connector protocol
 2. A service that implements the technology we want to connect to the connctd platform and communicates to the connctd platform via API provided by the platform
@@ -41,34 +41,38 @@ Create a new directory (`giphy-connector`) and initialize a new Go module in it 
 This will create a **go.mod** which is used to specify our module and dependencies.
 We will add some directories and files to structure our connectors:
 
-* **http/** 
-	* **handler.go**
-	
-	Contains the HTTP handler providing the callbacks for the connector protocol.
- 
-	* **http.go**
-	
-	Used to setup the HTTP handler and routes.
- 
+* **http/**
+  * **handler.go**
+
+    Contains the HTTP handler providing the callbacks for the connector protocol.
+
+  * **http.go**
+
+    Used to setup the HTTP handler and routes.
+
 * **service/**
 
-	* **main.go** 
-	
-	The entry point to our connector.
-	Starts the HTTP handler and the connector.
+  * **main.go**
+    * **main.go** 
+  * **main.go**
+    * **main.go** 
+  * **main.go**
 
-	* **protocol.go**
-	
-	Implements the connector protocol functions used by the HTTP handler.
+    The entry point to our connector.
+    Starts the HTTP handler and the connector.
+
+  * **protocol.go**
+
+    Implements the connector protocol functions used by the HTTP handler.
 
 * **vendor/**
 
-	Contains the dependencies of our connector.
+    Contains the dependencies of our connector.
 
 * **service.go**
-	
-	Defines a service interface implemented by our connector.
-	Can be used in the HTTP handler to handle the connector protocol.
+
+    Defines a service interface implemented by our connector.
+    Can be used in the HTTP handler to handle the connector protocol.
 
 If you do not want to start from scratch you can also check out the code repository at tag [**step1**](https://github.com/connctd/giphy-connector/tree/step1) for a basic code template containing the structure explained above.
 The tag also contains some code to setup the callback endpoints defined in the connector protocol.
@@ -112,39 +116,40 @@ We know that we need to store the installation in the database, so we create a d
 **service.go**
 ```golang
 type Database interface {
-	AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) error
+    AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) error
 }
 ```
 
 **protocol.go**
 ```golang
 type GiphyConnector struct {
-	logger logrus.FieldLogger
-	db     giphy.Database
+    logger logrus.FieldLogger
+    db     giphy.Database
 }
 
 // NewService returns an new instance of the Giphy connector
 func NewService(dbClient giphy.Database, logger logrus.FieldLogger) giphy.Service {
-	return &GiphyConnector{
-		logger,
-		dbClient,
-	}
+    return &GiphyConnector{
+        logger,
+        dbClient,
+    }
 }
 ```
+
 As mentioned above, the service just stores the installation request in the database.
 We do this by calling our database interface method.
 
 **protocol.go**
 ```golang
 func (g *GiphyConnector) AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) (*connector.InstallationResponse, error) {
-	logrus.WithField("installationRequest", installationRequest).Infoln("Received an installation request")
+    logrus.WithField("installationRequest", installationRequest).Infoln("Received an installation request")
 
-	if err := g.db.AddInstallation(ctx, installationRequest); err != nil {
-		g.logger.WithError(err).Errorln("Failed to add installation")
-		return nil, err
-	}
+    if err := g.db.AddInstallation(ctx, installationRequest); err != nil {
+        g.logger.WithError(err).Errorln("Failed to add installation")
+        return nil, err
+    }
 
-	return nil, nil
+    return nil, nil
 }
 ```
 
@@ -152,50 +157,51 @@ Next we will use this service to implement our HTTP handler.
 The handler will call the service with the request and respond to the connctd platform with an appropriate return code.
 
 **handler.go**
+
 ```golang
 func handleInstallation(service giphy.Service) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var req connector.InstallationRequest
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		if err = json.Unmarshal(body, req); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        var req connector.InstallationRequest
+        body, err := ioutil.ReadAll(r.Body)
+        if err != nil {
+            w.WriteHeader(http.StatusBadRequest)
+            return
+        }
+        if err = json.Unmarshal(body, req); err != nil {
+            w.WriteHeader(http.StatusBadRequest)
+            return
+        }
 
-		response, err := service.AddInstallation(r.Context(), req)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+        response, err := service.AddInstallation(r.Context(), req)
+        if err != nil {
+            w.WriteHeader(http.StatusInternalServerError)
+            return
+        }
 
-		// Installation was successfull so far but we require further steps
-		if response != nil {
-			// We add the further steps and details to the response
-			// We set the status code to accepted
-			// This signals the connctd platform, that the installation is ongoing
-			w.WriteHeader(http.StatusAccepted)
-			// As a good citizen we also set an appropriate content type
-			w.Header().Add("Content-Type", "application/json")
+        // Installation was successfull so far but we require further steps
+        if response != nil {
+            // We add the further steps and details to the response
+            // We set the status code to accepted
+            // This signals the connctd platform, that the installation is ongoing
+            w.WriteHeader(http.StatusAccepted)
+            // As a good citizen we also set an appropriate content type
+            w.Header().Add("Content-Type", "application/json")
 
-			b, err := json.Marshal(response)
-			if err != nil {
-				// Abort if we cannot marshal the response
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte("{\"err\":\"Failed to marshal error\"}"))
-			} else {
-				w.Write(b)
-			}
-			return
-		}
+            b, err := json.Marshal(response)
+            if err != nil {
+                // Abort if we cannot marshal the response
+                w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte("{\"err\":\"Failed to marshal error\"}"))
+            } else {
+                w.Write(b)
+            }
+            return
+        }
 
-		// Installation was successful and we do not need any further steps
-		// No payload is added to the response
-		w.WriteHeader(http.StatusCreated)
-	})
+        // Installation was successful and we do not need any further steps
+        // No payload is added to the response
+        w.WriteHeader(http.StatusCreated)
+    })
 }
 ```
 
@@ -203,21 +209,22 @@ Next we have to implement the database client.
 We create a new file **mysql.go** in the **service** directory and add the following code, that lets us create a new database client and use it in our service.
 
 **mysql.go**
+
 ```golang
 type DBClient struct {
-	db     *sqlx.DB
-	logger logrus.FieldLogger
+    db     *sqlx.DB
+    logger logrus.FieldLogger
 }
 
 // NewDBClient creates a new mysql client
 func NewDBClient(dsn string, logger logrus.FieldLogger) (*DBClient, error) {
-	// establish db connection
-	db, err := sqlx.Connect("mysql", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("can't connect to mysql db with DSN: %w", err)
-	}
+    // establish db connection
+    db, err := sqlx.Connect("mysql", dsn)
+    if err != nil {
+        return nil, fmt.Errorf("can't connect to mysql db with DSN: %w", err)
+    }
 
-	return &DBClient{db, logger}, nil
+    return &DBClient{db, logger}, nil
 }
 ```
 
@@ -225,28 +232,29 @@ We will add a command line flag to our **main.go** using the build in **flag** p
 This lets us choose the DSN for our database at startup.
 
 **main.go**
+
 ```golang
 func main() {
-	dsn := flag.String("mysql.dsn", "", "DSN in order to connect with db")
+    dsn := flag.String("mysql.dsn", "", "DSN in order to connect with db")
 
-	flag.Parse()
+    flag.Parse()
 
-	[...]
-	
-	// Create a new database client
-	dbClient, err := NewDBClient(*dsn, logrus.WithField("component", "database"))
-	if err != nil {
-		panic("Failed to connect to database: " + err.Error())
-	}
+    [...]
+    
+    // Create a new database client
+    dbClient, err := NewDBClient(*dsn, logrus.WithField("component", "database"))
+    if err != nil {
+        panic("Failed to connect to database: " + err.Error())
+    }
 
-	// Create a new instance of our connector
-	service := NewService(dbClient, logrus.WithField("component", "service"))
+    // Create a new instance of our connector
+    service := NewService(dbClient, logrus.WithField("component", "service"))
 
-	// Create a new HTTP handler using the service
-	httpHandler := ghttp.MakeHandler(backgroundCtx, publicKey, service)
+    // Create a new HTTP handler using the service
+    httpHandler := ghttp.MakeHandler(backgroundCtx, publicKey, service)
 
-	// Start the http server using our handler
-	http.ListenAndServe(":8080", httpHandler)
+    // Start the http server using our handler
+    http.ListenAndServe(":8080", httpHandler)
 }
 ```
 
@@ -258,6 +266,7 @@ From our working directory, we can then migrate our database with the following 
 `docker exec -i giphy-mysql mysql giphy_connector < service/migrations/0001_init.up.sql`
 
 **0001_init.up.sql**
+
 ```sql
 CREATE TABLE installations (
     id CHAR (36) NOT NULL,
@@ -269,17 +278,18 @@ CREATE TABLE installations (
 Now we can implement the database client:
 
 **mysql.go**
+
 ```golang
 var (
-	statementInsertInstallation = `INSERT INTO installations (id, token) VALUES (?, ?)`
+    statementInsertInstallation = `INSERT INTO installations (id, token) VALUES (?, ?)`
 )
 func (m *DBClient) AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) error {
-	_, err := m.db.Exec(statementInsertInstallation, installationRequest.ID, installationRequest.Token)
-	if err != nil {
-		return fmt.Errorf("failed to insert installation: %w", err)
-	}
+    _, err := m.db.Exec(statementInsertInstallation, installationRequest.ID, installationRequest.Token)
+    if err != nil {
+        return fmt.Errorf("failed to insert installation: %w", err)
+    }
 
-	return nil
+    return nil
 }
 ```
 
@@ -353,7 +363,7 @@ curl --location --request POST 'https://api.connctd.io/api/v1/query' \
 --data-raw '{"query":"mutation InstantiateConnector {\n    instantiateConnector(installationId: \"--installtionID--\", configuration: []\n    ) {\n        id\n        installation {\n            id\n        }\n        state\n        stateDetails\n    }\n}","variables":{}}'
 ```
 
-TODO Clean up query / delete \n 
+TODO Clean up query / delete \n
 (TODO Should we provide postman requests as an alternative?)
 
 Now we have an installation and an instance of our connector and can start adding Things to the instance.
@@ -370,34 +380,34 @@ In general, a Thing has the following form:
 
 ```golang
 type Thing struct {
-	ID              string          
-	Name            string          
-	Manufacturer    string          
-	DisplayType     string          
-	MainComponentID string          
-	Status          StatusType      
-	Components      []Component     
-	Attributes      []ThingAttribute
+    ID              string          
+    Name            string          
+    Manufacturer    string          
+    DisplayType     string          
+    MainComponentID string          
+    Status          StatusType      
+    Components      []Component     
+    Attributes      []ThingAttribute
 }
 
 
 type Component struct {
-	ID            string    
-	Name          string    
-	ComponentType string    
-	Capabilities  []string  
-	Properties    []Property
-	Actions       []Action  
+    ID            string    
+    Name          string    
+    ComponentType string    
+    Capabilities  []string  
+    Properties    []Property
+    Actions       []Action  
 }
 
 type Property struct {
-	ID           string   
-	Name         string   
-	Value        string   
-	Unit         string   
-	Type         ValueType
-	LastUpdate   time.Time
-	PropertyType string   
+    ID           string   
+    Name         string   
+    Value        string   
+    Unit         string   
+    Type         ValueType
+    LastUpdate   time.Time
+    PropertyType string   
 }
 ```
 
@@ -416,31 +426,32 @@ Since we only have one Thing per instance, we can just save the Thing ID in the 
 To make things easy, we use the connctd client from the SDK to handle the details.
 
 **protocol.go**
+
 ```golang
 type GiphyConnector struct {
-	logger        logrus.FieldLogger
-	db            giphy.Database
-	connctdClient connector.Client
+    logger        logrus.FieldLogger
+    db            giphy.Database
+    connctdClient connector.Client
 }
 
 // NewService returns a new instance of the Giphy connector
 func NewService(dbClient giphy.Database, connctdClient connector.Client, logger logrus.FieldLogger) giphy.Service {
-	return &GiphyConnector{
-		logger,
-		dbClient,
-		connctdClient,
-	}
+    return &GiphyConnector{
+        logger,
+        dbClient,
+        connctdClient,
+    }
 }
 
 func (g *GiphyConnector) AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error {
-	logrus.WithField("instantiationRequest", instantiationRequest).Infoln("Received an instantiation request")
+    logrus.WithField("instantiationRequest", instantiationRequest).Infoln("Received an instantiation request")
 
-	if err := g.db.AddInstance(ctx, instantiationRequest); err != nil {
-		g.logger.WithError(err).Errorln("Failed to add instance")
-		return err
-	}
+    if err := g.db.AddInstance(ctx, instantiationRequest); err != nil {
+        g.logger.WithError(err).Errorln("Failed to add instance")
+        return err
+    }
 
-	return g.CreateThing(ctx, instantiationRequest.ID)
+    return g.CreateThing(ctx, instantiationRequest.ID)
 }
 ```
 
@@ -449,91 +460,87 @@ Here we build the Things and register them with the platform.
 We know that we will want to update the property of the Things, so we will also implement the update here.
 
 **things.go**
-```golang
-const (
-	trendingComponentId = "trending"
-	trendingPropertyId  = "value"
-)
 
+```golang
 // buildThing returns a thing that can be registered with the connctd platform.
 // Note that the thing ID is generated by connctd and returned when the thing is created.
 // The connctd platform will store all information regarding the thing.
 // The connector therefore should only store its ID.
 func buildThing() restapi.Thing {
-	return restapi.Thing{
-		Name:            "Giphy",
-		Manufacturer:    "IoT connctd GmbH",
-		DisplayType:     "core.SENSOR",
-		MainComponentID: "trending",
-		Status:          "AVAILABLE",
-		Attributes:      []restapi.ThingAttribute{},
-		Components: []restapi.Component{
-			{
-				ID:            trendingComponentId,
-				Name:          "Giphy trending component",
-				ComponentType: "core.Sensor",
-				Capabilities: []string{
-					"core.MEASURE",
-				},
-				Properties: []restapi.Property{
-					{
-						ID:    trendingPropertyId,
-						Name:  "Giphy trending component",
-						Value: "",
-						Type:  restapi.ValueTypeString,
-					},
-				},
-				Actions: []restapi.Action{},
-			},
-		},
-	}
+    return restapi.Thing{
+        Name:            "Giphy",
+        Manufacturer:    "IoT connctd GmbH",
+        DisplayType:     "core.SENSOR",
+        MainComponentID: randomComponentId,
+        Status:          "AVAILABLE",
+        Attributes:      []restapi.ThingAttribute{},
+        Components: []restapi.Component{
+            {
+                ID:            randomComponentId,
+                Name:          "Giphy random component",
+                ComponentType: "core.Sensor",
+                Capabilities: []string{
+                    "core.MEASURE",
+                },
+                Properties: []restapi.Property{
+                    {
+                        ID:    randomPropertyId,
+                        Name:  "Giphy random component",
+                        Value: "",
+                        Type:  restapi.ValueTypeString,
+                    },
+                },
+                Actions: []restapi.Action{},
+            },
+        },
+    }
 }
 
 // CreateThing can be called by the connector to register a new thing for the given instance.
 // It retrieves the instance token from the database and uses the token to create a new thing via the connctd API client.
 // The new thing ID is then stored in the database referencing the instance id.
 func (g *GiphyConnector) CreateThing(ctx context.Context, instanceId string) error {
-	instance, err := g.db.GetInstance(ctx, instanceId)
-	if err != nil {
-		g.logger.WithField("instanceId", instanceId).WithError(err).Error("failed to retrieve instance from database")
-		return err
-	}
+    instance, err := g.db.GetInstance(ctx, instanceId)
+    if err != nil {
+        g.logger.WithField("instanceId", instanceId).WithError(err).Error("failed to retrieve instance from database")
+        return err
+    }
 
-	thing := buildThing()
-	createdThing, err := g.connctdClient.CreateThing(ctx, instance.Token, thing)
-	if err != nil {
-		g.logger.WithField("thing", thing).WithError(err).Error("failed to register new Thing")
-		return err
-	}
+    thing := buildThing()
+    createdThing, err := g.connctdClient.CreateThing(ctx, instance.Token, thing)
+    if err != nil {
+        g.logger.WithField("thing", thing).WithError(err).Error("failed to register new Thing")
+        return err
+    }
 
-	err = g.db.AddThingID(ctx, instanceId, createdThing.ID)
-	if err != nil {
-		g.logger.WithField("thing", thing).WithError(err).Error("failed to insert new Thing into database")
-		return err
-	}
+    err = g.db.AddThingID(ctx, instanceId, createdThing.ID)
+    if err != nil {
+        g.logger.WithField("thing", thing).WithError(err).Error("failed to insert new Thing into database")
+        return err
+    }
 
-	g.logger.WithField("thing", createdThing).Info("Created new thing")
+    g.logger.WithField("thing", createdThing).Info("Created new thing")
 
-	return nil
+    return nil
 }
 
 // UpdateTrending can be called by the connector to update the trending property of an thing belonging to an instance.
 func (g *GiphyConnector) UpdateTrending(ctx context.Context, instanceId string, value string) error {
-	instance, err := g.db.GetInstance(ctx, instanceId)
-	if err != nil {
-		g.logger.WithField("instanceId", instanceId).WithError(err).Error("failed to retrieve instance")
-		return err
-	}
-	if instance.ThingID == "" {
-		g.logger.WithField("instanceId", instanceId).Error("Thing id not set")
-		return errors.New("thing id not set")
-	}
+    instance, err := g.db.GetInstance(ctx, instanceId)
+    if err != nil {
+        g.logger.WithField("instanceId", instanceId).WithError(err).Error("failed to retrieve instance")
+        return err
+    }
+    if instance.ThingID == "" {
+        g.logger.WithField("instanceId", instanceId).Error("Thing id not set")
+        return errors.New("thing id not set")
+    }
 
-	timestamp := time.Now()
+    timestamp := time.Now()
 
-	err = g.connctdClient.UpdateThingPropertyValue(ctx, instance.Token, instance.ThingID, trendingComponentId, trendingPropertyId, value, timestamp)
+    err = g.connctdClient.UpdateThingPropertyValue(ctx, instance.Token, instance.ThingID, trendingComponentId, trendingPropertyId, value, timestamp)
 
-	return err
+    return err
 }
 ```
 
@@ -541,29 +548,31 @@ To be able to create Things and store the IDs in the database, we also extend an
 We also create **model.go** which contains the Go representation of our database model.
 
 **service.go**
+
 ```golang
 type Connector interface {
-	CreateThing(ctx context.Context, instanceId string) error
-	UpdateProperty(ctx context.Context, thingId string, value string) error
+    CreateThing(ctx context.Context, instanceId string) error
+    UpdateProperty(ctx context.Context, thingId string, value string) error
 }
 
 type Database interface {
-	AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) error
+    AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) error
 
-	AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error
-	GetInstance(ctx context.Context, instanceId string) (*Instance, error)
+    AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error
+    GetInstance(ctx context.Context, instanceId string) (*Instance, error)
 
-	AddThingID(ctx context.Context, instanceID string, thingID string) error
+    AddThingID(ctx context.Context, instanceID string, thingID string) error
 }
 ```
 
 **model.go**
+
 ```golang
 type Instance struct {
-	ID             string                       `db:"id" json:"id"`
-	InstallationID string                       `db:"installation_id" json:"installationId"`
-	Token          connector.InstantiationToken `db:"token" json:"token"`
-	ThingID        string                       `db:"thing_id" json:"thingId"`
+    ID             string                       `db:"id" json:"id"`
+    InstallationID string                       `db:"installation_id" json:"installationId"`
+    Token          connector.InstantiationToken `db:"token" json:"token"`
+    ThingID        string                       `db:"thing_id" json:"thingId"`
 }
 ```
 
@@ -585,15 +594,16 @@ We will implement configuration parameters later on.
 The provider will implement the following interface, which lets the connector register new instances and listen to the update event channel.
 
 **giphyhandler.go**
+
 ```golang
 type Provider interface {
-	UpdateChannel() <-chan GiphyUpdate
-	RegisterInstances(instanceId ...string) error
+    UpdateChannel() <-chan GiphyUpdate
+    RegisterInstances(instanceId ...string) error
 }
 
 type GiphyUpdate struct {
-	InstanceId string
-	Value      string
+    InstanceId string
+    Value      string
 }
 ```
 
@@ -605,31 +615,32 @@ At the start of each run of the loop it will add the newly registered instances 
 It will then send an update event for each instance and sleep until the next update.
 
 **giphy.go**
+
 ```golang
 func (h *Handler) UpdateChannel() <-chan connector.GiphyUpdate {
-	return h.updateChannel
+    return h.updateChannel
 }
 
 func (h *Handler) RegisterInstances(instanceIds ...string) error {
-	h.newInstances = append(h.newInstances, instanceIds...)
-	return nil
+    h.newInstances = append(h.newInstances, instanceIds...)
+    return nil
 }
 
 func (h *Handler) Run() {
-	for {
-		h.addNewInstances()
-		randomGif, err := h.getRandomGif()
-		for _, instanceId := range h.instances {
-			if err != nil {
-				continue
-			}
-			h.updateChannel <- connector.GiphyUpdate{
-				InstanceId: instanceId,
-				Value:      randomGif,
-			}
-		}
-		time.Sleep(1 * time.Minute)
-	}
+    for {
+        h.addNewInstances()
+        randomGif, err := h.getRandomGif()
+        for _, instanceId := range h.instances {
+            if err != nil {
+                continue
+            }
+            h.updateChannel <- connector.GiphyUpdate{
+                InstanceId: instanceId,
+                Value:      randomGif,
+            }
+        }
+        time.Sleep(1 * time.Minute)
+    }
 }
 ```
 
@@ -637,97 +648,101 @@ With this in place, we will have to register our instances, start the provider a
 
 We will register instances in two places: whenever a new instance is created and at start up to register the existing instances.
 
-***protocol.go***
+**protocol.go**
+
 ```golang
 
 func (g *GiphyConnector) init() {
-	instances, err := g.db.GetInstances(context.Background())
-	if err != nil {
-		g.logger.WithError(err).Error("Failed to retrieve instances from db")
-		return
-	}
+    instances, err := g.db.GetInstances(context.Background())
+    if err != nil {
+        g.logger.WithError(err).Error("Failed to retrieve instances from db")
+        return
+    }
 
-	instanceIds := make([]string, len(instances))
-	for i := range instances {
-		instanceIds[i] = instances[i].ID
-	}
-	g.giphyProvider.RegisterInstances(instanceIds...)
+    instanceIds := make([]string, len(instances))
+    for i := range instances {
+        instanceIds[i] = instances[i].ID
+    }
+    g.giphyProvider.RegisterInstances(instanceIds...)
 
-	go g.giphyEventHandler(context.Background())
+    go g.giphyEventHandler(context.Background())
 }
 
 // AddInstantiation is called by the HTTP handler when it retrieved an instantiation request
 func (g *GiphyConnector) AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error {
-	logrus.WithField("instantiationRequest", instantiationRequest).Infoln("Received an instantiation request")
+    logrus.WithField("instantiationRequest", instantiationRequest).Infoln("Received an instantiation request")
 
-	if err := g.db.AddInstance(ctx, instantiationRequest); err != nil {
-		g.logger.WithError(err).Errorln("Failed to add instance")
-		return err
-	}
+    if err := g.db.AddInstance(ctx, instantiationRequest); err != nil {
+        g.logger.WithError(err).Errorln("Failed to add instance")
+        return err
+    }
 
-	if err := g.CreateThing(ctx, instantiationRequest.ID); err != nil {
-		g.logger.WithError(err).Errorln("Failed to create new thing")
-		return err
-	}
+    if err := g.CreateThing(ctx, instantiationRequest.ID); err != nil {
+        g.logger.WithError(err).Errorln("Failed to create new thing")
+        return err
+    }
 
-	g.giphyProvider.RegisterInstances(instantiationRequest.ID)
+    g.giphyProvider.RegisterInstances(instantiationRequest.ID)
 
-	return nil
+    return nil
 }
 ```
 
 We will listen to the update events and use our UpdateProperty(..) method to update the properties.
 The event listener will also run in a goroutine.
 
-***protocol.go***
+**protocol.go**
+
 ```golang
 // giphyEventHandler handles events coming from the giphy provider
 func (g *GiphyConnector) giphyEventHandler(ctx context.Context) {
-	// wait for Giphy events
-	go func() {
-		for update := range g.giphyProvider.UpdateChannel() {
-			g.logger.WithField("value", update.Value).Infoln("Received update from Giphy provider")
-			g.UpdateProperty(ctx, update.InstanceId, update.Value)
-		}
-	}()
+    // wait for Giphy events
+    go func() {
+        for update := range g.giphyProvider.UpdateChannel() {
+            g.logger.WithField("value", update.Value).Infoln("Received update from Giphy provider")
+            g.UpdateProperty(ctx, update.InstanceId, update.Value)
+        }
+    }()
 }
 ```
 
 In **main.go** we will start the Giphy provider and configure the required API Key.
 
-***main.go***
+**main.go**
+
 ```golang
 func main() {
-	[...]
-	
-		// We need a Giphy API key to use their API
-	giphyAPIKey := os.Getenv("GIPHY_API_KEY")
-	if giphyAPIKey == "" {
-		panic("GIPHY_API_KEY environment variable not set")
-	}
-	giphyProvider := gProvider.New(giphyAPIKey)
+    [...]
+    
+        // We need a Giphy API key to use their API
+    giphyAPIKey := os.Getenv("GIPHY_API_KEY")
+    if giphyAPIKey == "" {
+        panic("GIPHY_API_KEY environment variable not set")
+    }
+    giphyProvider := gProvider.New(giphyAPIKey)
 
-	// Create a new instance of our connector
-	service := NewService(dbClient, connctdClient, giphyProvider, logrus.WithField("component", "service"))
+    // Create a new instance of our connector
+    service := NewService(dbClient, connctdClient, giphyProvider, logrus.WithField("component", "service"))
 
-	// Start Giphy provider
-	go giphyProvider.Run()
+    // Start Giphy provider
+    go giphyProvider.Run()
 }
 ```
 
 We have also added a new method to our database to be able to retrieve all existing instances.
 
-***mysql.go***
+**mysql.go**
+
 ```golang
 // GetInstances returns all instances.
 func (m *DBClient) GetInstances(ctx context.Context) ([]*giphy.Instance, error) {
-	var result []*giphy.Instance
-	err := m.db.Select(&result, statementGetInstances)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve instance: %w", err)
-	}
+    var result []*giphy.Instance
+    err := m.db.Select(&result, statementGetInstances)
+    if err != nil {
+        return nil, fmt.Errorf("failed to retrieve instance: %w", err)
+    }
 
-	return result, nil
+    return result, nil
 }
 ```
 
@@ -735,5 +750,7 @@ If we now run the connector (don't forget to provide your Gihpy API key in **run
 You can query the history of the property using the [GraphQL API](https://docs.connctd.io/graphql/history/#resolve).
 
 ## Configuration Parameters
+
+We mentioned above that
 
 ## Action Requests
