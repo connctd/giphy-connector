@@ -32,6 +32,9 @@ github.com/gorilla/mux
 ## explicit; go 1.10
 github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
+# github.com/peterhellberg/giphy v0.0.0-20171214132724-091ba7d7516d
+## explicit
+github.com/peterhellberg/giphy
 # github.com/sirupsen/logrus v1.8.1
 ## explicit; go 1.13
 github.com/sirupsen/logrus

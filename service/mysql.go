@@ -15,7 +15,8 @@ var (
 	statementInsertInstallation = `INSERT INTO installations (id, token) VALUES (?, ?)`
 
 	statementInsertInstance  = `INSERT INTO instances (id, installation_id, token) VALUES (?, ?, ?)`
-	statementGetInstanceByID = `SELECT id, token from instances WHERE id = ?`
+	statementGetInstanceByID = `SELECT id, token, thing_id FROM instances WHERE id = ?`
+	statementGetInstances    = `SELECT id, token, thing_id FROM instances`
 
 	statementInsertThingId = `UPDATE instances SET thing_id = ? WHERE id = ?`
 )
@@ -66,6 +67,17 @@ func (m *DBClient) GetInstance(ctx context.Context, instanceId string) (*giphy.I
 	}
 
 	return &result, nil
+}
+
+// GetInstances returns all instances.
+func (m *DBClient) GetInstances(ctx context.Context) ([]*giphy.Instance, error) {
+	var result []*giphy.Instance
+	err := m.db.Select(&result, statementGetInstances)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve instance: %w", err)
+	}
+
+	return result, nil
 }
 
 // AddThingID updates the instance with the thing ID.

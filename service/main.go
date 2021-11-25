@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"flag"
+	gProvider "giphy-connector/giphy"
 	ghttp "giphy-connector/http"
 	"net/http"
 	"os"
@@ -31,6 +32,13 @@ func main() {
 		panic("Invalid public key: " + err.Error())
 	}
 
+	// We need a Giphy API key to use their API
+	giphyAPIKey := os.Getenv("GIPHY_API_KEY")
+	if giphyAPIKey == "" {
+		panic("GIPHY_API_KEY environment variable not set")
+	}
+	giphyProvider := gProvider.New(giphyAPIKey)
+
 	// Create a new database client
 	dbClient, err := NewDBClient(*dsn, logrus.WithField("component", "database"))
 	if err != nil {
@@ -43,12 +51,16 @@ func main() {
 	}
 
 	// Create a new instance of our connector
-	service := NewService(dbClient, connctdClient, logrus.WithField("component", "service"))
+	service := NewService(dbClient, connctdClient, giphyProvider, logrus.WithField("component", "service"))
 
 	// Create a new HTTP handler using the service
 	httpHandler := ghttp.MakeHandler(backgroundCtx, publicKey, service)
 
 	logrus.Info("Initialized connector, start callback handler")
+
+	// Start Giphy provider
+	go giphyProvider.Run()
+
 	// Start the http server using our handler
 	http.ListenAndServe(":8080", httpHandler)
 }

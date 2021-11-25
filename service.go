@@ -27,6 +27,7 @@ type Database interface {
 
 	AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error
 	GetInstance(ctx context.Context, instanceId string) (*Instance, error)
+	GetInstances(ctx context.Context) ([]*Instance, error)
 
 	AddThingID(ctx context.Context, instanceID string, thingID string) error
 }

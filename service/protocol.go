@@ -14,15 +14,37 @@ type GiphyConnector struct {
 	logger        logrus.FieldLogger
 	db            giphy.Database
 	connctdClient connector.Client
+	giphyProvider giphy.Provider
 }
 
 // NewService returns a new instance of the Giphy connector
-func NewService(dbClient giphy.Database, connctdClient connector.Client, logger logrus.FieldLogger) giphy.Service {
-	return &GiphyConnector{
+func NewService(dbClient giphy.Database, connctdClient connector.Client, giphyProvider giphy.Provider, logger logrus.FieldLogger) giphy.Service {
+	connector := &GiphyConnector{
 		logger,
 		dbClient,
 		connctdClient,
+		giphyProvider,
 	}
+
+	connector.init()
+
+	return connector
+}
+
+func (g *GiphyConnector) init() {
+	instances, err := g.db.GetInstances(context.Background())
+	if err != nil {
+		g.logger.WithError(err).Error("Failed to retrieve instances from db")
+		return
+	}
+
+	instanceIds := make([]string, len(instances))
+	for i := range instances {
+		instanceIds[i] = instances[i].ID
+	}
+	g.giphyProvider.RegisterInstances(instanceIds...)
+
+	go g.giphyEventHandler(context.Background())
 }
 
 // AddInstallation is called by the HTTP handler when it retrieved an installation request
@@ -51,6 +73,8 @@ func (g *GiphyConnector) AddInstance(ctx context.Context, instantiationRequest c
 		return err
 	}
 
+	g.giphyProvider.RegisterInstances(instantiationRequest.ID)
+
 	return nil
 }
 
@@ -58,4 +82,15 @@ func (g *GiphyConnector) AddInstance(ctx context.Context, instantiationRequest c
 func (g *GiphyConnector) HandleAction(ctx context.Context, actionRequest connector.ActionRequest) error {
 	logrus.WithField("actionRequest", actionRequest).Infoln("Received an action request")
 	return nil
+}
+
+// giphyEventHandler handles events coming from the giphy provider
+func (g *GiphyConnector) giphyEventHandler(ctx context.Context) {
+	// wait for Giphy events
+	go func() {
+		for update := range g.giphyProvider.UpdateChannel() {
+			g.logger.WithField("value", update.Value).Infoln("Received update from Giphy provider")
+			g.UpdateProperty(ctx, update.InstanceId, update.Value)
+		}
+	}()
 }
