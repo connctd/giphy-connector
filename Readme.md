@@ -320,7 +320,9 @@ TODO: Explain first step?
 In the second step, provide the callback URLs:
 
 installationCallbackUrl: https://-ngrokId-.ngrok.io/callbacks/installations
+
 instanceCallbackUrl: https://-ngrokId-.ngrok.io/callbacks/instantiations
+
 actionCallbackUrl: https://-ngrokId-.ngrok.io/callbacks/actions
 
 Complete the publication and make sure to save the public key which is shown after the publication.
@@ -553,7 +555,7 @@ type Database interface {
 
 	AddThingID(ctx context.Context, instanceID string, thingID string) error
 }
-***
+```
 
 **model.go**
 ```golang
