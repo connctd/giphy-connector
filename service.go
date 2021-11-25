@@ -24,6 +24,7 @@ type Connector interface {
 
 type Database interface {
 	AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) error
+	AddInstallationConfiguration(ctx context.Context, installationId string, config []connector.Configuration) error
 
 	AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error
 	GetInstance(ctx context.Context, instanceId string) (*Instance, error)

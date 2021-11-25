@@ -56,6 +56,11 @@ func (g *GiphyConnector) AddInstallation(ctx context.Context, installationReques
 		return nil, err
 	}
 
+	if err := g.db.AddInstallationConfiguration(ctx, installationRequest.ID, installationRequest.Configuration); err != nil {
+		g.logger.WithError(err).WithField("config", installationRequest.Configuration).Errorln("Failed to add installation configuration")
+		return nil, err
+	}
+
 	return nil, nil
 }
 
