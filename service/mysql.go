@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	statementInsertInstallation = `INSERT INTO installations (id, token) VALUES (?, ?)`
+	statementInsertInstallation       = `INSERT INTO installations (id, token) VALUES (?, ?)`
+	statementInsertInstallationConfig = `INSERT INTO installation_configuration (installation_id, id, value) VALUES (?, ?, ?)`
 
 	statementInsertInstance  = `INSERT INTO instances (id, installation_id, token) VALUES (?, ?, ?)`
 	statementGetInstanceByID = `SELECT id, token, thing_id FROM instances WHERE id = ?`
@@ -43,6 +44,18 @@ func (m *DBClient) AddInstallation(ctx context.Context, installationRequest conn
 	_, err := m.db.Exec(statementInsertInstallation, installationRequest.ID, installationRequest.Token)
 	if err != nil {
 		return fmt.Errorf("failed to insert installation: %w", err)
+	}
+
+	return nil
+}
+
+// AddInstallationConfiguration adds all configuration parameters to the database.
+func (m *DBClient) AddInstallationConfiguration(ctx context.Context, installationId string, config []connector.Configuration) error {
+	for _, c := range config {
+		_, err := m.db.Exec(statementInsertInstallationConfig, installationId, c.ID, c.Value)
+		if err != nil {
+			return fmt.Errorf("failed to insert installation config: %w", err)
+		}
 	}
 
 	return nil
