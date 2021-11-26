@@ -32,12 +32,7 @@ func main() {
 		panic("Invalid public key: " + err.Error())
 	}
 
-	// We need a Giphy API key to use their API
-	giphyAPIKey := os.Getenv("GIPHY_API_KEY")
-	if giphyAPIKey == "" {
-		panic("GIPHY_API_KEY environment variable not set")
-	}
-	giphyProvider := gProvider.New(giphyAPIKey)
+	giphyProvider := gProvider.New()
 
 	// Create a new database client
 	dbClient, err := NewDBClient(*dsn, logrus.WithField("component", "database"))
@@ -56,11 +51,14 @@ func main() {
 	// Create a new HTTP handler using the service
 	httpHandler := ghttp.MakeHandler(backgroundCtx, publicKey, service)
 
-	logrus.Info("Initialized connector, start callback handler")
-
+	logrus.Info("start giphy provider")
 	// Start Giphy provider
 	go giphyProvider.Run()
 
+	logrus.Info("start callback handler")
 	// Start the http server using our handler
-	http.ListenAndServe(":8080", httpHandler)
+	err = http.ListenAndServe(":8080", httpHandler)
+	if err != nil {
+		logrus.WithError(err).Error("failed to start handler")
+	}
 }

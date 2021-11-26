@@ -32,17 +32,20 @@ func NewService(dbClient giphy.Database, connctdClient connector.Client, giphyPr
 }
 
 func (g *GiphyConnector) init() {
+	installations, err := g.db.GetInstallations(context.Background())
+	if err != nil {
+		g.logger.WithError(err).Error("Failed to retrieve instances from db")
+		return
+	}
+	g.giphyProvider.RegisterInstallations(installations...)
+
 	instances, err := g.db.GetInstances(context.Background())
 	if err != nil {
 		g.logger.WithError(err).Error("Failed to retrieve instances from db")
 		return
 	}
 
-	instanceIds := make([]string, len(instances))
-	for i := range instances {
-		instanceIds[i] = instances[i].ID
-	}
-	g.giphyProvider.RegisterInstances(instanceIds...)
+	g.giphyProvider.RegisterInstances(instances...)
 
 	go g.giphyEventHandler(context.Background())
 }
@@ -61,6 +64,12 @@ func (g *GiphyConnector) AddInstallation(ctx context.Context, installationReques
 		return nil, err
 	}
 
+	g.giphyProvider.RegisterInstallations(&giphy.Installation{
+		ID:            installationRequest.ID,
+		Token:         installationRequest.Token,
+		Configuration: installationRequest.Configuration,
+	})
+
 	return nil, nil
 }
 
@@ -78,7 +87,11 @@ func (g *GiphyConnector) AddInstance(ctx context.Context, instantiationRequest c
 		return err
 	}
 
-	g.giphyProvider.RegisterInstances(instantiationRequest.ID)
+	g.giphyProvider.RegisterInstances(&giphy.Instance{
+		ID:             instantiationRequest.ID,
+		InstallationID: instantiationRequest.InstallationID,
+		Token:          instantiationRequest.Token,
+	})
 
 	return nil
 }
@@ -94,7 +107,7 @@ func (g *GiphyConnector) giphyEventHandler(ctx context.Context) {
 	// wait for Giphy events
 	go func() {
 		for update := range g.giphyProvider.UpdateChannel() {
-			g.logger.WithField("value", update.Value).Infoln("Received update from Giphy provider")
+			g.logger.WithField("instanceId", update.InstanceId).WithField("value", update.Value).Infoln("Received update from Giphy provider")
 			g.UpdateProperty(ctx, update.InstanceId, update.Value)
 		}
 	}()
