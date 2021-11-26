@@ -321,6 +321,8 @@ ngrok should print a log for the request and the connector should have responded
 
 This is our SignatureValidationHandler in action, which refuses the request since we didn't provide a valid signature.
 
+### Connector Publication
+
 We can now publish our connector to the connctd platform.
 Note however that we may have to republish the connector, when the ngrok URL changes.
 To publish the connector, login to the [Developer Center](https://devcenter.connctd.io/) and create a new App, if you haven't already.
@@ -365,6 +367,8 @@ curl --location --request POST 'https://api.connctd.io/api/v1/query' \
 
 TODO Clean up query / delete \n
 (TODO Should we provide postman requests as an alternative?)
+
+### Thing Abstraction
 
 Now we have an installation and an instance of our connector and can start adding Things to the instance.
 A Thing is an abstract representation of a specific technology.
@@ -578,9 +582,9 @@ type Instance struct {
 
 With this in place, you should now test the connector and create some new instances.
 For every instance you create, a new thing should be created but no property updates should happen yet.
-For the complete code see tag **step3**.
+For the complete code see tag [**step3**](https://github.com/connctd/giphy-connector/tree/step3).
 
-## Giphy Provider
+### Giphy Provider
 
 We now have installations, instances and things registered at the connctd platform but nothing in place to update our things.
 If you query your thing (see [documentation](https://docs.connctd.io/graphql/things/) or use the [Developer Center](https://devcenter.connctd.io/things)) the value of the property should be an empty string.
@@ -748,9 +752,204 @@ func (m *DBClient) GetInstances(ctx context.Context) ([]*giphy.Instance, error) 
 
 If we now run the connector (don't forget to provide your Gihpy API key in **run.sh**), the property of your registered Thing should now update once a minute.
 You can query the history of the property using the [GraphQL API](https://docs.connctd.io/graphql/history/#resolve).
+For the complete code see tag [**step4**](https://github.com/connctd/giphy-connector/tree/step4).
 
-## Configuration Parameters
+### Configuration Parameters
 
-We mentioned above that
+We mentioned [above](#giphy-provider) that we do not want to use the same API key for all installations.
+We will now solve this problem by implementing an installation level configuration parameter.
+Every App developer who installs and uses the connector will then have to provide his own API key.
+If instead every end user should provide a key, we would implement an instantiation configuration parameter.
+
+In order to let the connctd platform know about the configuration parameter, we have to provide it during connector publication.
+Lets publish a new connector to add the parameter.
+Follow the instructions given [above](#connector-publication) and instead of skipping step 3, provide add a new entry to the installation configuration with the ID ***giphy_api_key***, a value type of ***STRING(Text)*** and required set to true.
+Do not forget to click the *Add entry* icon (+) after providing the configuration.
+We should pick something meaningful for the ID and name, because it will be used in our connector and shown during installation.
+Now start a installation for the new connector.
+The installation wizard should ask you to provide an API key.
+Before finishing the installation, lets modify our connector to store the provided key.
+
+We create a new database table **installation_configuration** and add the configuration parameters to the database whenever the installation handler is called.
+
+**service/migrations/0002_installations_config.up.sql**
+
+```sql
+CREATE TABLE installation_configuration (
+    installation_id CHAR (36) NOT NULL,
+    id CHAR (36) NOT NULL,
+    value VARCHAR (200) NOT NULL,
+    FOREIGN KEY (installation_id)
+        REFERENCES installations(id)
+);
+```
+
+Again, you can apply the migration with `docker exec -i giphy-mysql mysql giphy_connector < service/migrations/0002_installation_config.up.sql`.
+
+**protocol.go**
+
+```golang
+// AddInstallation is called by the HTTP handler when it retrieved an installation request
+func (g *GiphyConnector) AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) (*connector.InstallationResponse, error) {
+    logrus.WithField("installationRequest", installationRequest).Infoln("Received an installation request")
+
+    if err := g.db.AddInstallation(ctx, installationRequest); err != nil {
+        g.logger.WithError(err).Errorln("Failed to add installation")
+        return nil, err
+    }
+
+    if err := g.db.AddInstallationConfiguration(ctx, installationRequest.ID, installationRequest.Configuration); err != nil {
+        g.logger.WithError(err).WithField("config", installationRequest.Configuration).Errorln("Failed to add installation configuration")
+        return nil, err
+    }
+
+    return nil, nil
+}
+```
+
+**mysql.go**
+
+```golang
+var (
+	statementInsertInstallationConfig = `INSERT INTO installation_configuration (installation_id, id, value) VALUES (?, ?, ?)`
+)
+
+// AddInstallationConfiguration adds all configuration parameters to the database.
+func (m *DBClient) AddInstallationConfiguration(ctx context.Context, installationId string, config []connector.Configuration) error {
+	for _, c := range config {
+		_, err := m.db.Exec(statementInsertInstallationConfig, installationId, c.ID, c.Value)
+		if err != nil {
+			return fmt.Errorf("failed to insert installation config: %w", err)
+		}
+	}
+
+	return nil
+}
+```
+
+Don't forget to add the new database method to the interface:
+
+**service.go**
+
+```golang
+type Database interface {
+    AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) error
+    AddInstallationConfiguration(ctx context.Context, installationId string, config []connector.Configuration) error
+
+    AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error
+    GetInstance(ctx context.Context, instanceId string) (*Instance, error)
+    GetInstances(ctx context.Context) ([]*Instance, error)
+
+    AddThingID(ctx context.Context, instanceID string, thingID string) error
+}
+```
+
+This is also a good moment to delete all existing installations and instances from our database.
+After that, apply the migration and restart the connector.
+Then finish the installation.
+The installation should succeed and the provided API key should be stored in the database.
+For the complete code see tag [**step5.1**](https://github.com/connctd/giphy-connector/tree/step5.1).
+
+Now that we have one API key per installation, we should start using it.
+Instead of setting the API key once at start up, we will change the Giphy provider to retrieve the key from the installation and retrieve the new random gif with this key.
+
+**giphy.go**
+
+```golang
+func (h *Handler) Run() {
+	for {
+		h.addNewInstances()
+
+		for _, instance := range h.instances {
+			if err := h.setApiKey(instance.InstallationID); err != nil {
+				logrus.WithError(err).Errorln("failed to set API key for " + instance.InstallationID)
+				continue
+			}
+
+			randomGif, err := h.getRandomGif()
+			if err != nil {
+				continue
+			}
+
+			h.updateChannel <- connector.GiphyUpdate{
+				InstanceId: instance.ID,
+				Value:      randomGif,
+			}
+		}
+		time.Sleep(1 * time.Minute)
+	}
+}
+
+func (h *Handler) setApiKey(installationId string) error {
+	installation, ok := h.installations[installationId]
+	if !ok {
+		return errors.New("installation not registered")
+	}
+	key, ok := installation.GetConfig("giphy_api_key")
+	if !ok {
+		return errors.New("could not find api key")
+	}
+
+	h.giphyClient.APIKey = key.Value
+	return nil
+}
+```
+
+As we see, the Giphy provider needs access to the installations to be able to retrieve the key from the configuration.
+This means that we have to register the installations with the provider, like we did before with the instances.
+Also the provider needs to now, which instance belongs to which installation.
+We solve the seconds problem by registering instances instead of only registering their IDs, which will give us the instances installation ID.
+
+**giphyhandler.go**
+
+```golang
+type Provider interface {
+	UpdateChannel() <-chan GiphyUpdate
+	RegisterInstances(instances ...*Instance) error
+	RegisterInstallations(installations ...*Installation) error
+}
+```
+
+We will register the installations at start up and whenever a new installation is created.
+
+**protocol.go**
+
+```golang
+func (g *GiphyConnector) init() {
+	installations, err := g.db.GetInstallations(context.Background())
+	if err != nil {
+		g.logger.WithError(err).Error("Failed to retrieve instances from db")
+		return
+	}
+	g.giphyProvider.RegisterInstallations(installations...)
+
+    [...]
+
+	g.giphyProvider.RegisterInstances(instances...)
+
+	go g.giphyEventHandler(context.Background())
+}
+
+// AddInstallation is called by the HTTP handler when it retrieved an installation request
+func (g *GiphyConnector) AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) (*connector.InstallationResponse, error) {
+    [...]
+
+	g.giphyProvider.RegisterInstallations(&giphy.Installation{
+		ID:            installationRequest.ID,
+		Token:         installationRequest.Token,
+		Configuration: installationRequest.Configuration,
+	})
+
+	return nil, nil
+}
+```
+
+As you can see, this required us to implement a Go representation for installations and a database method to retrieve the installations.
+Take a look at **model.go**, **mysql.go** and **service.go** for more details.
+We have also implemented a convenience method to get configuration parameters by ID from an installation, which allows us to easily retrieve the API key from an installation.
+
+As a last step, we can now also remove the API key from **runs.sh** and **main.go**.
+
+For the complete code see tag [**step5.2**](https://github.com/connctd/giphy-connector/tree/step5.2).
 
 ## Action Requests
