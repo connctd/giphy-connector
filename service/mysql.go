@@ -12,12 +12,14 @@ import (
 )
 
 var (
-	statementInsertInstallation       = `INSERT INTO installations (id, token) VALUES (?, ?)`
-	statementInsertInstallationConfig = `INSERT INTO installation_configuration (installation_id, id, value) VALUES (?, ?, ?)`
+	statementInsertInstallation               = `INSERT INTO installations (id, token) VALUES (?, ?)`
+	statementInsertInstallationConfig         = `INSERT INTO installation_configuration (installation_id, id, value) VALUES (?, ?, ?)`
+	statementGetInstallations                 = `SELECT id FROM installations`
+	statementGetConfigurationByInstallationID = `SELECT id, value FROM installation_configuration WHERE installation_id = ?`
 
 	statementInsertInstance  = `INSERT INTO instances (id, installation_id, token) VALUES (?, ?, ?)`
-	statementGetInstanceByID = `SELECT id, token, thing_id FROM instances WHERE id = ?`
-	statementGetInstances    = `SELECT id, token, thing_id FROM instances`
+	statementGetInstanceByID = `SELECT id, token, installation_id, thing_id FROM instances WHERE id = ?`
+	statementGetInstances    = `SELECT id, token, installation_id, thing_id FROM instances`
 
 	statementInsertThingId = `UPDATE instances SET thing_id = ? WHERE id = ?`
 )
@@ -59,6 +61,23 @@ func (m *DBClient) AddInstallationConfiguration(ctx context.Context, installatio
 	}
 
 	return nil
+}
+
+func (m *DBClient) GetInstallations(ctx context.Context) ([]*giphy.Installation, error) {
+	var installations []*giphy.Installation
+	err := m.db.Select(&installations, statementGetInstallations)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve instance: %w", err)
+	}
+	for i, installation := range installations {
+		var configurations []connector.Configuration
+		err := m.db.Select(&configurations, statementGetConfigurationByInstallationID, installation.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve instance: %w", err)
+		}
+		installations[i].Configuration = configurations
+	}
+	return installations, nil
 }
 
 // AddInstance adds an instantiation to the database.

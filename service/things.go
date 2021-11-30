@@ -36,7 +36,7 @@ func buildThing() restapi.Thing {
 				Properties: []restapi.Property{
 					{
 						ID:    randomPropertyId,
-						Name:  "Giphy random component",
+						Name:  "Giphy random property",
 						Value: "",
 						Type:  restapi.ValueTypeString,
 					},
