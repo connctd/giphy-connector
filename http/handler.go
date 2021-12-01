@@ -96,7 +96,28 @@ func handleAction(service giphy.Service) http.HandlerFunc {
 			return
 		}
 
-		// TODO: let the connector handle action request
+		response, err := service.HandleAction(r.Context(), req)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// If the connector service returns with an action response, the action is still pending or it failed.
+		// In that case the protocol expects us to send the action response.
+		if response != nil {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Add("Content-Type", "application/json")
+
+			b, err := json.Marshal(response)
+			if err != nil {
+				// Abort if we cannot marshal the response
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("{\"err\":\"Failed to marshal error\"}"))
+			} else {
+				w.Write(b)
+			}
+			return
+		}
 
 		// Action is complete, we send the appropriate status code according to the connector protocol
 		w.WriteHeader(http.StatusNoContent)

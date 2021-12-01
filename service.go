@@ -14,12 +14,12 @@ type Service interface {
 type ConnectorProtocol interface {
 	AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) (*connector.InstallationResponse, error)
 	AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error
-	HandleAction(ctx context.Context, actionRequest connector.ActionRequest) error
+	HandleAction(ctx context.Context, actionRequest connector.ActionRequest) (*connector.ActionResponse, error)
 }
 
 type Connector interface {
 	CreateThing(ctx context.Context, instanceId string) error
-	UpdateProperty(ctx context.Context, thingId string, value string) error
+	UpdateProperty(ctx context.Context, thingId string, componentId string, propertyId string, value string) error
 }
 
 type Database interface {
@@ -30,6 +30,7 @@ type Database interface {
 	AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error
 	GetInstance(ctx context.Context, instanceId string) (*Instance, error)
 	GetInstances(ctx context.Context) ([]*Instance, error)
+	GetInstanceByThingId(ctx context.Context, thingId string) (*Instance, error)
 
 	AddThingID(ctx context.Context, instanceID string, thingID string) error
 }
