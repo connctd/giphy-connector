@@ -17,9 +17,10 @@ var (
 	statementGetInstallations                 = `SELECT id FROM installations`
 	statementGetConfigurationByInstallationID = `SELECT id, value FROM installation_configuration WHERE installation_id = ?`
 
-	statementInsertInstance  = `INSERT INTO instances (id, installation_id, token) VALUES (?, ?, ?)`
-	statementGetInstanceByID = `SELECT id, token, installation_id, thing_id FROM instances WHERE id = ?`
-	statementGetInstances    = `SELECT id, token, installation_id, thing_id FROM instances`
+	statementInsertInstance       = `INSERT INTO instances (id, installation_id, token) VALUES (?, ?, ?)`
+	statementGetInstanceByID      = `SELECT id, token, installation_id, thing_id FROM instances WHERE id = ?`
+	statementGetInstanceByThingID = `SELECT id, token, installation_id, thing_id FROM instances WHERE thing_id = ?`
+	statementGetInstances         = `SELECT id, token, installation_id, thing_id FROM instances`
 
 	statementInsertThingId = `UPDATE instances SET thing_id = ? WHERE id = ?`
 )
@@ -63,6 +64,8 @@ func (m *DBClient) AddInstallationConfiguration(ctx context.Context, installatio
 	return nil
 }
 
+// GetInstallations returns a list of all existing installations together with their provided configuration parameters.
+// It is used to register all installations with the Giphy provider at startup.
 func (m *DBClient) GetInstallations(ctx context.Context) ([]*giphy.Installation, error) {
 	var installations []*giphy.Installation
 	err := m.db.Select(&installations, statementGetInstallations)
@@ -102,6 +105,7 @@ func (m *DBClient) GetInstance(ctx context.Context, instanceId string) (*giphy.I
 }
 
 // GetInstances returns all instances.
+// It is used to register all instances with the Giphy provider at startup.
 func (m *DBClient) GetInstances(ctx context.Context) ([]*giphy.Instance, error) {
 	var result []*giphy.Instance
 	err := m.db.Select(&result, statementGetInstances)
@@ -110,6 +114,17 @@ func (m *DBClient) GetInstances(ctx context.Context) ([]*giphy.Instance, error) 
 	}
 
 	return result, nil
+}
+
+// GetInstanceByThingId return the instance with the given thing id.
+func (m *DBClient) GetInstanceByThingId(ctx context.Context, thingId string) (*giphy.Instance, error) {
+	var result giphy.Instance
+	err := m.db.Get(&result, statementGetInstanceByThingID, thingId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve instance: %w", err)
+	}
+
+	return &result, nil
 }
 
 // AddThingID updates the instance with the thing ID.

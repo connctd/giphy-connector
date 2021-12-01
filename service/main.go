@@ -53,7 +53,7 @@ func main() {
 
 	logrus.Info("start giphy provider")
 	// Start Giphy provider
-	go giphyProvider.Run()
+	giphyProvider.Run()
 
 	logrus.Info("start callback handler")
 	// Start the http server using our handler
