@@ -142,12 +142,12 @@ func (g *GiphyConnector) HandleAction(ctx context.Context, actionRequest connect
 	instance, err := g.db.GetInstanceByThingId(ctx, actionRequest.ThingID)
 	if err != nil {
 		g.logger.WithField("actionRequest", actionRequest).WithError(err).Error("Could not retrieve the instance for thing ID")
-		return &connector.ActionResponse{ID: actionRequest.ID, Status: restapi.ActionRequestStatusFailed, Error: "thing ID was not found at connector"}, nil
+		return &connector.ActionResponse{Status: restapi.ActionRequestStatusFailed, Error: "thing ID was not found at connector"}, nil
 	}
 
 	status, err := g.giphyProvider.RequestAction(ctx, instance, actionRequest)
 	if err != nil {
-		return &connector.ActionResponse{ID: actionRequest.ID, Status: status, Error: err.Error()}, err
+		return &connector.ActionResponse{Status: status, Error: err.Error()}, err
 	}
 
 	switch status {
@@ -159,7 +159,7 @@ func (g *GiphyConnector) HandleAction(ctx context.Context, actionRequest connect
 		// The action is not completed yet.
 		// We send no error but an ActionResponse and the handler will return status code 200.
 		// We have to send an status update when the action is completed.
-		return &connector.ActionResponse{ID: actionRequest.ID, Status: status}, nil
+		return &connector.ActionResponse{Status: status}, nil
 	case restapi.ActionRequestStatusFailed:
 		// This should not happen.
 		// The provider is expected to return an error if the action failed, which we catch above.
