@@ -953,3 +953,246 @@ As a last step, we can now also remove the API key from **runs.sh** and **main.g
 For the complete code see tag [**step5.2**](https://github.com/connctd/giphy-connector/tree/step5.2).
 
 ## Action Requests
+
+In the next chapter we are going to implement action requests.
+Actions are features of the connected technology that require active usage by a user or service.
+E.g. a door lock needs a trigger to lock or unlock itself.
+Actions can still affect properties of a component.
+E.g. the door lock may update a property holding the current lock state.
+In our case we want to trigger the Giphy search endpoint with a given keyword that may be provided by a user.
+
+The implementation can be broke down into three steps:
+
+* Register the action at the connctd platform by adding it to the Things we create.
+
+* Implement the action handler, which is currently just a stub.
+
+* Implement the action in the Giphy provider.
+
+Lets start by modifying the Things we create for each instance to additionally contain the search action.
+To do this, we change the thing template used by our buildThing() function.
+We can think of the search as a second component of our Thing with a new property to store the search result and the search action.
+Search requires a search term which we will provide to the search action with a search parameter.
+
+**thing.go**
+```golang
+func buildThing() restapi.Thing {
+	return restapi.Thing{
+		Name:            "Giphy",
+		Manufacturer:    "IoT connctd GmbH",
+		DisplayType:     "core.SENSOR",
+		MainComponentID: giphy.RandomComponentId,
+		Status:          "AVAILABLE",
+		Attributes:      []restapi.ThingAttribute{},
+		Components: []restapi.Component{
+			{
+				ID:            giphy.RandomComponentId,
+				Name:          "Giphy random component",
+				ComponentType: "core.Sensor",
+				Capabilities: []string{
+					"core.MEASURE",
+				},
+				Properties: []restapi.Property{
+					{
+						ID:    giphy.RandomPropertyId,
+						Name:  "Giphy random property",
+						Value: "",
+						Type:  restapi.ValueTypeString,
+					},
+				},
+				Actions: []restapi.Action{},
+			},
+			{
+				ID:            giphy.SearchComponentId,
+				Name:          "Giphy search",
+				ComponentType: "core.Sensor",
+				Capabilities: []string{
+					"core.SEARCH",
+				},
+				Properties: []restapi.Property{
+					{
+						ID:   giphy.SearchPropertyId,
+						Name: "Giphy search property",
+						Type: restapi.ValueTypeString,
+					},
+				},
+				Actions: []restapi.Action{
+					{
+						ID:   giphy.SearchActionId,
+						Name: "Giphy search action",
+						Parameters: []restapi.ActionParameter{
+							{
+								Name: giphy.SearchActionParameterId,
+								Type: restapi.ValueTypeString,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+```
+
+This will only register a search component for new instances and does not update old instances.
+Therefore it is a good moment to delete the current connector and its installations and instances.
+We still didn't implement the endpoints to handle installation and instance removal, so remember to also reset the database.
+We can now create a new connector publication and install the new connector in the [Connector Store](https://devcenter.connctd.io/connectors/store).
+
+Next we will implement the HTTP handler function.
+According to the [connector protocol](https://docs.connctd.io/connector/connector_protocol/#action-callback) a action request can either respond with status code **204** if the action request was immediately completed or with **200** and a payload if the action request failed or is still pending.
+To make it more interesting, lets implement a asynchronous action and respond with **200** and a status of **PENDING**.
+This requires us to also update the status as soon as the action is finished.
+
+**handler.go**
+```golang
+func handleAction(service giphy.Service) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req connector.ActionRequest
+
+        [...]
+
+		response, err := service.HandleAction(r.Context(), req)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// If the connector service returns with an action response, the action is still pending or it failed.
+		// In that case the protocol expects us to send the action response.
+		if response != nil {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Add("Content-Type", "application/json")
+
+			b, err := json.Marshal(response)
+			if err != nil {
+				// Abort if we cannot marshal the response
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("{\"err\":\"Failed to marshal error\"}"))
+			} else {
+				w.Write(b)
+			}
+			return
+		}
+
+		// Action is complete, we send the appropriate status code according to the connector protocol
+		w.WriteHeader(http.StatusNoContent)
+	})
+}
+```
+
+The handler delegates the action request to the underlying service and if the service returns an ActionResponse it will respond with the ActionResponse and status code **200**.
+
+We have already implemented a stub method in the service which will log the action request.
+If you trigger the action via the [GraphQL API](https://docs.connctd.io/graphql/things/#trigger-actions) you should therefore see the log in the connector output.
+The GraphQL query to trigger the search action should look like the following:
+
+```graphql
+mutation SearchAction($thingId: ID!, $keyword: String!) {
+  requestThingAction(
+    thingConstraints: { thingConstraint: {id: $thingId } },
+	componentSelector: { id: "search"},
+	actionSelector: {id: "search", parameterName: "keyword", parameterType: STRING},
+	actionParameters: [{name: "keyword", value: $keyword}],
+	dryRun:false
+  ) {
+    targetThing{
+        id
+        name
+        manufacturer
+    }
+    targetComponent {
+        id
+        name
+    }
+    targetAction {
+        id
+    }
+    id
+    status
+    deadline
+    error
+  }
+}
+```
+
+The service will retrieve the instance for which the action was triggered and delegate the action to the Giphy provider.
+The provider will then execute the action and respond with an action status:
+If it the execution failed, it responds with **FAILED** and an error describing the failure.
+If it executed the action synchronously and successful it responds with **COMPLETED**.
+If it will execute the action asynchronously it can respond with **PENDING** and later on send an update on the update channel.
+When the service receives this update, it will update the status of the action requests with the connctd platform.
+
+For the complete code take a look at [step6](https://github.com/connctd/giphy-connector/tree/step6).
+
+## Installation and Instance removal
+
+For the sake of completeness we will also implement the last two callbacks, defined in the connector protocol.
+If an instance or an installation is deleted from the connctd platform, the platform will send a DELETE request against the installation or instantiation callback URLs (cf. [protocol callbacks](https://docs.connctd.io/connector/connector_protocol/#callbacks)).
+If we get a removal request we will simply remove the installation or instance from our running provider (otherwise we may get error messages if we try to update instances that the platform has no knowledge of) and from the database.
+In case of installations we also have to delete the configuration parameters.
+Since both removal flows are very similar, we will only take a look at the installation removal here.
+
+We start by implementing the HTTP handler.
+In **http.go** we add a route to match the DELETE request:
+
+```golang
+	r.Path("/installations/{id}").Methods(http.MethodDelete).Handler(
+		connector.NewSignatureValidationHandler(
+			connector.DefaultValidationPreProcessor(),
+			publicKey,
+			handleInstallationRemoval(service),
+		),
+	)
+```
+
+Next we implement the handler functions.
+Both handler functions will extract the ID from the URI (using [gorilla/mux](https://github.com/gorilla/mux)) and call the appropriate handler in our service.
+If no errors occurred during the process they respond with status code **204** which signal a successful removal to the connctd platform.
+Note that the installation or instance will be removed from the platform regardless of the status code we return.
+However, a status code other then **204** allows the platform to show an appropriate warning to the user.
+
+```golang
+func handleInstallationRemoval(service giphy.Service) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		id, ok := vars["id"]
+
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if err := service.RemoveInstallation(r.Context(), id); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	})
+}
+```
+
+The service will take care of removing the installation from the provider and the database by delegating to the underlying services.
+
+```golang
+func (g *GiphyConnector) RemoveInstallation(ctx context.Context, installationId string) error {
+	if err := g.giphyProvider.RemoveInstallation(installationId); err != nil {
+		return err
+	}
+
+	if err := g.db.RemoveInstallation(ctx, installationId); err != nil {
+		return err
+	}
+	return nil
+}
+```
+
+When removing the installation from the database we must also remove the configuration parameters and the remaining instances.
+To make this simple, we will change our database schema to set the foreign keys to the installations ID to **CASCADE DELETE**.
+This way, the database will automatically delete all rows referencing a deleted installation ID.
+Take a look at **0003_cascade_delete.up.sql** for details on how to do this.
+Note however, that no instances should be left in the database at this point, since the connctd platform will call the removal callback for each existing instance before removing the installation.
+
+For the complete code take a look at [step7](https://github.com/connctd/giphy-connector/tree/step7).
