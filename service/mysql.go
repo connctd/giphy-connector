@@ -16,11 +16,13 @@ var (
 	statementInsertInstallationConfig         = `INSERT INTO installation_configuration (installation_id, id, value) VALUES (?, ?, ?)`
 	statementGetInstallations                 = `SELECT id FROM installations`
 	statementGetConfigurationByInstallationID = `SELECT id, value FROM installation_configuration WHERE installation_id = ?`
+	statementRemoveInstallationById           = `DELETE FROM installtations WHERE id = ?`
 
 	statementInsertInstance       = `INSERT INTO instances (id, installation_id, token) VALUES (?, ?, ?)`
 	statementGetInstanceByID      = `SELECT id, token, installation_id, thing_id FROM instances WHERE id = ?`
 	statementGetInstanceByThingID = `SELECT id, token, installation_id, thing_id FROM instances WHERE thing_id = ?`
 	statementGetInstances         = `SELECT id, token, installation_id, thing_id FROM instances`
+	statementRemoveInstanceById   = `DELETE FROM instances WHERE id = ?`
 
 	statementInsertThingId = `UPDATE instances SET thing_id = ? WHERE id = ?`
 )
@@ -83,6 +85,19 @@ func (m *DBClient) GetInstallations(ctx context.Context) ([]*giphy.Installation,
 	return installations, nil
 }
 
+// RemoveInstance removes the instance with the given id from the database.
+// This will also remove instances belonging to this installation, as well as the configuration parameters.
+// Removal of config parameters and instances is implemented via cascading foreign keys in the database.
+// If your database does not support cascading foreign keys, you should delete them manually.
+func (m *DBClient) RemoveInstallation(ctx context.Context, installationId string) error {
+	_, err := m.db.Exec(statementRemoveInstallationById, installationId)
+	if err != nil {
+		return fmt.Errorf("failed to remove instance")
+	}
+
+	return nil
+}
+
 // AddInstance adds an instantiation to the database.
 func (m *DBClient) AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error {
 	_, err := m.db.Exec(statementInsertInstance, instantiationRequest.ID, instantiationRequest.InstallationID, instantiationRequest.Token)
@@ -125,6 +140,16 @@ func (m *DBClient) GetInstanceByThingId(ctx context.Context, thingId string) (*g
 	}
 
 	return &result, nil
+}
+
+// RemoveInstance removes the instance with the given id from the database.
+func (m *DBClient) RemoveInstance(ctx context.Context, instanceId string) error {
+	_, err := m.db.Exec(statementRemoveInstanceById, instanceId)
+	if err != nil {
+		return fmt.Errorf("failed to remove instance")
+	}
+
+	return nil
 }
 
 // AddThingID updates the instance with the thing ID.
