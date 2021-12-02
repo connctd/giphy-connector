@@ -10,7 +10,9 @@ import (
 type Provider interface {
 	UpdateChannel() <-chan GiphyUpdate
 	RegisterInstances(instances ...*Instance) error
+	RemoveInstance(instanceId string) error
 	RegisterInstallations(installations ...*Installation) error
+	RemoveInstallation(installationId string) error
 	RequestAction(ctx context.Context, instance *Instance, actionRequest connector.ActionRequest) (restapi.ActionRequestStatus, error)
 }
 

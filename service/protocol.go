@@ -57,7 +57,7 @@ func (g *GiphyConnector) init() {
 // AddInstallation is called by the HTTP handler when it retrieved an installation request
 // It will persist the new installation and its configuration and register the new installation with the Giphy provider.
 func (g *GiphyConnector) AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) (*connector.InstallationResponse, error) {
-	logrus.WithField("installationRequest", installationRequest).Infoln("Received an installation request")
+	g.logger.WithField("installationRequest", installationRequest).Infoln("Received an installation request")
 
 	if err := g.db.AddInstallation(ctx, installationRequest); err != nil {
 		g.logger.WithError(err).Errorln("Failed to add installation")
@@ -78,11 +78,27 @@ func (g *GiphyConnector) AddInstallation(ctx context.Context, installationReques
 	return nil, nil
 }
 
+// RemoveInstallation is called by the HTTP handler when it retrieved an installation removal request.
+// It will remove the installation from the database (including the installation token) and from the running Giphy provider.
+// Note that we will not be able to communicate with the connctd platform about the removed installation after this, since the token is deleted.
+func (g *GiphyConnector) RemoveInstallation(ctx context.Context, installationId string) error {
+	g.logger.WithField("installationId", installationId).Infoln("Received an installation removal request")
+
+	if err := g.giphyProvider.RemoveInstallation(installationId); err != nil {
+		return err
+	}
+
+	if err := g.db.RemoveInstallation(ctx, installationId); err != nil {
+		return err
+	}
+	return nil
+}
+
 // AddInstantiation is called by the HTTP handler when it retrieved an instantiation request
 // It will persist the new instance, create a new Thing for the instance
 // and register the new instance with the Giphy provider.
 func (g *GiphyConnector) AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error {
-	logrus.WithField("instantiationRequest", instantiationRequest).Infoln("Received an instantiation request")
+	g.logger.WithField("instantiationRequest", instantiationRequest).Infoln("Received an instantiation request")
 
 	if err := g.db.AddInstance(ctx, instantiationRequest); err != nil {
 		g.logger.WithError(err).Errorln("Failed to add instance")
@@ -103,9 +119,25 @@ func (g *GiphyConnector) AddInstance(ctx context.Context, instantiationRequest c
 	return nil
 }
 
+// RemoveInstance is called by the HTTP handler when it retrieved an instance removal request.
+// It will remove the instance from the database (including the instance token) and from the running Giphy provider.
+// Note that we will not be able to communicate with the connctd platform about the removed instance after this, since the token is deleted.
+func (g *GiphyConnector) RemoveInstance(ctx context.Context, installationId string) error {
+	g.logger.WithField("installationId", installationId).Infoln("Received an installation removal request")
+
+	if err := g.giphyProvider.RemoveInstance(installationId); err != nil {
+		return err
+	}
+
+	if err := g.db.RemoveInstance(ctx, installationId); err != nil {
+		return err
+	}
+	return nil
+}
+
 // HandleAction is called by the HTTP handler when it retrieved an action request
 func (g *GiphyConnector) HandleAction(ctx context.Context, actionRequest connector.ActionRequest) (*connector.ActionResponse, error) {
-	logrus.WithField("actionRequest", actionRequest).Infoln("Received an action request")
+	g.logger.WithField("actionRequest", actionRequest).Infoln("Received an action request")
 
 	instance, err := g.db.GetInstanceByThingId(ctx, actionRequest.ThingID)
 	if err != nil {
@@ -121,7 +153,7 @@ func (g *GiphyConnector) HandleAction(ctx context.Context, actionRequest connect
 	switch status {
 	case restapi.ActionRequestStatusCompleted:
 		// The action is completed.
-		// We send no error and no response and the handler will return status code 204.
+		// We send no error and no response body and the handler will return status code 204.
 		return nil, nil
 	case restapi.ActionRequestStatusPending:
 		// The action is not completed yet.
@@ -154,14 +186,4 @@ func (g *GiphyConnector) giphyEventHandler(ctx context.Context) {
 			}
 		}
 	}()
-}
-
-func (g *GiphyConnector) UpdateActionStatus(ctx context.Context, instanceId string, actionResponse *connector.ActionResponse) error {
-	instance, err := g.db.GetInstance(ctx, instanceId)
-	if err != nil {
-		g.logger.WithField("instanceId", instanceId).WithError(err).Error("failed to retrieve instance")
-		return err
-	}
-
-	return g.connctdClient.UpdateActionStatus(ctx, instance.Token, actionResponse.ID, actionResponse.Status, actionResponse.Error)
 }

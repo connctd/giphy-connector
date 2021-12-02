@@ -33,11 +33,25 @@ func setupConnectorProtocolCallbacks(r *mux.Router, publicKey ed25519.PublicKey,
 			handleInstallation(service),
 		),
 	)
+	r.Path("/installations/{id}").Methods(http.MethodDelete).Handler(
+		connector.NewSignatureValidationHandler(
+			connector.DefaultValidationPreProcessor(),
+			publicKey,
+			handleInstallationRemoval(service),
+		),
+	)
 	r.Path("/instantiations").Methods(http.MethodPost).Handler(
 		connector.NewSignatureValidationHandler(
 			connector.DefaultValidationPreProcessor(),
 			publicKey,
 			handleInstantiation(service),
+		),
+	)
+	r.Path("/instantiations/{id}").Methods(http.MethodPost).Handler(
+		connector.NewSignatureValidationHandler(
+			connector.DefaultValidationPreProcessor(),
+			publicKey,
+			handleInstantiationRemoval(service),
 		),
 	)
 	r.Path("/actions").Methods(http.MethodPost).Handler(

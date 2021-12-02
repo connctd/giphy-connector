@@ -6,6 +6,7 @@ import (
 	"giphy-connector"
 	"time"
 
+	"github.com/connctd/connector-go"
 	"github.com/connctd/restapi-go"
 )
 
@@ -118,7 +119,20 @@ func (g *GiphyConnector) UpdateProperty(ctx context.Context, instanceId, compone
 
 	timestamp := time.Now()
 
+	// Use the client from the SDK to update the action status
 	err = g.connctdClient.UpdateThingPropertyValue(ctx, instance.Token, instance.ThingID, componentId, propertyId, value, timestamp)
 
 	return err
+}
+
+// UpdateActionStatus can be called by the connector to update the status of an action request.
+func (g *GiphyConnector) UpdateActionStatus(ctx context.Context, instanceId string, actionResponse *connector.ActionResponse) error {
+	instance, err := g.db.GetInstance(ctx, instanceId)
+	if err != nil {
+		g.logger.WithField("instanceId", instanceId).WithError(err).Error("failed to retrieve instance")
+		return err
+	}
+
+	// Use the client from the SDK to update the action status
+	return g.connctdClient.UpdateActionStatus(ctx, instance.Token, actionResponse.ID, actionResponse.Status, actionResponse.Error)
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/connctd/connector-go"
+	"github.com/gorilla/mux"
 )
 
 // handleInstallation is called whenever a connector is installed via the connctd platform
@@ -56,6 +57,26 @@ func handleInstallation(service giphy.Service) http.HandlerFunc {
 	})
 }
 
+// handleInstallationRemoval is called whenever an instance is removed by the the connctd platform.
+func handleInstallationRemoval(service giphy.Service) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		id, ok := vars["id"]
+
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if err := service.RemoveInstallation(r.Context(), id); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	})
+}
+
 // handleInstantiation is called whenever a connector is instantiated via the connctd platform
 // The request body should contain a valid connector.InstantiationRequest
 func handleInstantiation(service giphy.Service) http.HandlerFunc {
@@ -78,6 +99,26 @@ func handleInstantiation(service giphy.Service) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusCreated)
+	})
+}
+
+// handleInstantiationRemoval is called whenever an instance is removed by the the connctd platform.
+func handleInstantiationRemoval(service giphy.Service) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		id, ok := vars["id"]
+
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if err := service.RemoveInstance(r.Context(), id); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 	})
 }
 
