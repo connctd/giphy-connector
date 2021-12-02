@@ -17,9 +17,10 @@ type Provider interface {
 }
 
 type GiphyUpdate struct {
-	ActionResponse *connector.ActionResponse
-	InstanceId     string
-	ComponentId    string
-	PropertyId     string
-	Value          string
+	ActionResponse  *connector.ActionResponse
+	ActionRequestId string
+	InstanceId      string
+	ComponentId     string
+	PropertyId      string
+	Value           string
 }

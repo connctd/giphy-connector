@@ -126,7 +126,7 @@ func (g *GiphyConnector) UpdateProperty(ctx context.Context, instanceId, compone
 }
 
 // UpdateActionStatus can be called by the connector to update the status of an action request.
-func (g *GiphyConnector) UpdateActionStatus(ctx context.Context, instanceId string, actionResponse *connector.ActionResponse) error {
+func (g *GiphyConnector) UpdateActionStatus(ctx context.Context, instanceId string, actionRequestId string, actionResponse *connector.ActionResponse) error {
 	instance, err := g.db.GetInstance(ctx, instanceId)
 	if err != nil {
 		g.logger.WithField("instanceId", instanceId).WithError(err).Error("failed to retrieve instance")
@@ -134,5 +134,5 @@ func (g *GiphyConnector) UpdateActionStatus(ctx context.Context, instanceId stri
 	}
 
 	// Use the client from the SDK to update the action status
-	return g.connctdClient.UpdateActionStatus(ctx, instance.Token, actionResponse.ID, actionResponse.Status, actionResponse.Error)
+	return g.connctdClient.UpdateActionStatus(ctx, instance.Token, actionRequestId, actionResponse.Status, actionResponse.Error)
 }

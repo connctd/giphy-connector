@@ -179,7 +179,11 @@ func (g *GiphyConnector) giphyEventHandler(ctx context.Context) {
 			g.UpdateProperty(ctx, update.InstanceId, update.ComponentId, update.PropertyId, update.Value)
 			if update.ActionResponse != nil {
 				g.logger.WithField("action", update.ActionResponse).Info("update action status")
-				err := g.UpdateActionStatus(ctx, update.InstanceId, update.ActionResponse)
+				if update.ActionRequestId == "" {
+					g.logger.WithField("update", update).Errorln("no action request id set")
+					continue
+				}
+				err := g.UpdateActionStatus(ctx, update.InstanceId, update.ActionRequestId, update.ActionResponse)
 				if err != nil {
 					g.logger.WithError(err).Error("Failed to update action status")
 				}

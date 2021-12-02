@@ -146,13 +146,12 @@ func (h *Handler) actionHandler() {
 		switch pendingAction.ActionID {
 		case "search":
 			update := connector.GiphyUpdate{
-				ActionResponse: &sdk.ActionResponse{
-					ID: pendingAction.ID,
-				},
-				InstanceId:  pendingAction.instance.ID,
-				ComponentId: connector.SearchComponentId,
-				PropertyId:  connector.SearchPropertyId,
-				Value:       "",
+				ActionResponse:  &sdk.ActionResponse{},
+				ActionRequestId: pendingAction.ID,
+				InstanceId:      pendingAction.instance.ID,
+				ComponentId:     connector.SearchComponentId,
+				PropertyId:      connector.SearchPropertyId,
+				Value:           "",
 			}
 			keyword := pendingAction.Parameters["keyword"]
 			result, err := h.getSearchResult(pendingAction.instance, keyword)
