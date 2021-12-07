@@ -2,7 +2,7 @@
 ## explicit; go 1.14
 github.com/connctd/api-go
 github.com/connctd/api-go/crypto
-# github.com/connctd/connector-go v0.0.0-20210826081925-40807b693708 => /home/sthh/Dev/connctd/connector-go
+# github.com/connctd/connector-go v0.0.0-20211207130051-5234f3594288
 ## explicit; go 1.14
 github.com/connctd/connector-go
 github.com/connctd/connector-go/db

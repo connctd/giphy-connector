@@ -45,9 +45,9 @@ func NewConnectorHandler(subrouter *mux.Router, service ConnectorService, public
 	c.router.Path("/installations/{id}").Methods(http.MethodDelete).Handler(NewSignatureValidationHandler(
 		AutoProxyRequestValidationPreProcessor(), publicKey, RemoveInstallation(c.service)))
 
-	c.router.Path("/instantiations").Methods(http.MethodPost).Handler(NewSignatureValidationHandler(
+	c.router.Path("/instances").Methods(http.MethodPost).Handler(NewSignatureValidationHandler(
 		AutoProxyRequestValidationPreProcessor(), publicKey, AddInstance(c.service)))
-	c.router.Path("/instantiations/{id}").Methods(http.MethodDelete).Handler(NewSignatureValidationHandler(
+	c.router.Path("/instances/{id}").Methods(http.MethodDelete).Handler(NewSignatureValidationHandler(
 		AutoProxyRequestValidationPreProcessor(), publicKey, RemoveInstance(c.service)))
 
 	c.router.Path("/actions").Methods(http.MethodPost).Handler(NewSignatureValidationHandler(
