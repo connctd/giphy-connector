@@ -33,13 +33,15 @@ func main() {
 	giphyProvider := NewGiphyProvider()
 
 	// Create a new database client
-	dbOptions := &db.DBOptions{
-		Driver: db.DriverMysql,
-		DSN:    "root@tcp(localhost)/giphy_connector?parseTime=true",
-	}
-	dbClient, err := db.NewDBClient(dbOptions, connector.DefaultLogger)
+	// Uncomment the next lines to use a mysql database
+	// dbOptions := &db.DBOptions{
+	// 	Driver: db.DriverMysql,
+	// 	DSN:    "root@tcp(localhost)/giphy_connector?parseTime=true",
+	// }
+	// dbClient, err := db.NewDBClient(dbOptions, connector.DefaultLogger)
 
-	// dbClient, err := db.NewDBClient(db.DefaultOptions, connector.DefaultLogger)
+	// Uses a Sqlite3 database by default
+	dbClient, err := db.NewDBClient(db.DefaultOptions, connector.DefaultLogger)
 	if err != nil {
 		panic("Failed to connect to database: " + err.Error())
 	}
