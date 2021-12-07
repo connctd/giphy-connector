@@ -94,17 +94,40 @@ func DefaultValidationPreProcessor() ValidationPreProcessor {
 // ProxiedRequestValidationPreProcessor allows passing modified headers to validate signature
 // function. This is necessary in case received request headers do not match up with
 // sent request headers because of e.g. proxies in between
-func ProxiedRequestValidationPreProcessor(scheme string, host string, endpoint string) ValidationPreProcessor {
+func ProxiedRequestValidationPreProcessor(scheme string, host string) ValidationPreProcessor {
 	return func(r *http.Request) ValidationParameters {
 		return ValidationParameters{
 			Scheme:     scheme,
 			Host:       host,
-			RequestURI: endpoint,
+			RequestURI: r.URL.RequestURI(),
 		}
 	}
 }
 
-// ValidationParameters reflects list of parameters that are relevant for request signature validation
+// AutoProxyRequestValidationPreProcessor is used to set the signature validation parameters
+// to header values provided by a reverse proxy. Your proxy must set the header X-Forwarded-Proto
+// to the original protocol used by the client and X-Forwarded-Host to the original host requested by the client.
+func AutoProxyRequestValidationPreProcessor() ValidationPreProcessor {
+	return func(r *http.Request) ValidationParameters {
+		scheme := r.Header.Get("X-Forwarded-Proto")
+		if scheme == "" {
+			scheme = "https"
+		}
+
+		host := r.Header.Get("X-Forwarded-Host")
+		if host == "" {
+			host = r.Host
+		}
+
+		return ValidationParameters{
+			Scheme:     scheme,
+			Host:       host,
+			RequestURI: r.URL.RequestURI(),
+		}
+	}
+}
+
+// ValidationParameters reflects a list of parameters that are relevant for request signature validation
 type ValidationParameters struct {
 	Scheme     string
 	Host       string

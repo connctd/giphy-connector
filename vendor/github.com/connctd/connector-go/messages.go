@@ -14,9 +14,6 @@ const (
 	StepRedirect StepType = 3
 )
 
-// InstallationToken can be used by a connector installation to propagte e.g. state changes
-type InstallationToken string
-
 // InstallationState reflects the current state of an installation
 type InstallationState int
 
@@ -47,9 +44,6 @@ type InstallationResponse struct {
 	Details     json.RawMessage `json:"details,omitempty"`
 	FurtherStep Step            `json:"furtherStep,omitempty"`
 }
-
-// InstantiationToken can be used by a connector instance to send things or updates
-type InstantiationToken string
 
 // InstantiationState reflects the current state of an instantiation
 type InstantiationState int
@@ -90,12 +84,6 @@ type StepType int
 type Step struct {
 	Type    StepType `json:"type"`
 	Content string   `json:"content"`
-}
-
-// Configuration is key value pair
-type Configuration struct {
-	ID    string `json:"id"`
-	Value string `json:"value"`
 }
 
 // AddThingRequest is used to create a new thing on connctd platform
