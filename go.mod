@@ -6,7 +6,7 @@ require github.com/sirupsen/logrus v1.8.1
 
 require (
 	github.com/connctd/api-go v0.0.1 // indirect
-	github.com/connctd/connector-go v0.0.0-20211207130051-5234f3594288
+	github.com/connctd/connector-go v0.0.0-20211208100942-8a48fcfdd12d
 	github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2
 	github.com/go-logr/stdr v0.3.0 // indirect
 	github.com/peterhellberg/giphy v0.0.0-20171214132724-091ba7d7516d

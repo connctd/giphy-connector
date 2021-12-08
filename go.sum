@@ -6,6 +6,8 @@ github.com/connctd/connector-go v0.0.0-20210826081925-40807b693708 h1:0IHbneCh/P
 github.com/connctd/connector-go v0.0.0-20210826081925-40807b693708/go.mod h1:6TOACWRYxlJLAdhhkUo478uZhuwztc3wZ5tcu0krvq0=
 github.com/connctd/connector-go v0.0.0-20211207130051-5234f3594288 h1:QMu2hITrzC2maoG4h2VmcwxwBLoNIXgvYlH5ileIPTw=
 github.com/connctd/connector-go v0.0.0-20211207130051-5234f3594288/go.mod h1:izlE3WHkEhk57e+gDgBOjBu0X80RVcpLbh+1beVM+Qs=
+github.com/connctd/connector-go v0.0.0-20211208100942-8a48fcfdd12d h1:iESkvQU1WbQ3iyEEeMcrZrKIrpLVBhPHt0RtPYfBRAI=
+github.com/connctd/connector-go v0.0.0-20211208100942-8a48fcfdd12d/go.mod h1:izlE3WHkEhk57e+gDgBOjBu0X80RVcpLbh+1beVM+Qs=
 github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2 h1:igoL9tMk2KbHfreEENmuzheaJ9PuQ9biyDwnBkO4Bzk=
 github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2/go.mod h1:LcHfnyb/K2HNcnYBj5UlWgIcm32hduyIbGSHS9r8hK4=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

@@ -2,10 +2,11 @@
 ## explicit; go 1.14
 github.com/connctd/api-go
 github.com/connctd/api-go/crypto
-# github.com/connctd/connector-go v0.0.0-20211207130051-5234f3594288
+# github.com/connctd/connector-go v0.0.0-20211208100942-8a48fcfdd12d
 ## explicit; go 1.14
 github.com/connctd/connector-go
 github.com/connctd/connector-go/db
+github.com/connctd/connector-go/provider
 github.com/connctd/connector-go/service
 # github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2
 ## explicit; go 1.14

@@ -60,7 +60,7 @@ var (
 	statementInsertInstallationConfig         = `INSERT INTO installation_configuration (installation_id, id, value) VALUES (?, ?, ?)`
 	statementGetInstallations                 = `SELECT id FROM installations`
 	statementGetConfigurationByInstallationID = `SELECT id, value FROM installation_configuration WHERE installation_id = ?`
-	statementRemoveInstallationById           = `DELETE FROM installtations WHERE id = ?`
+	statementRemoveInstallationById           = `DELETE FROM installations WHERE id = ?`
 
 	statementInsertInstance               = `INSERT INTO instances (id, installation_id, token) VALUES (?, ?, ?)`
 	statementGetInstanceByID              = `SELECT id, token, installation_id FROM instances WHERE id = ?`
@@ -197,7 +197,10 @@ func (m *DBClient) GetInstallations(ctx context.Context) ([]*connector.Installat
 func (m *DBClient) RemoveInstallation(ctx context.Context, installationId string) error {
 	_, err := m.DB.Exec(statementRemoveInstallationById, installationId)
 	if err != nil {
-		return fmt.Errorf("failed to remove instance")
+		if err == sql.ErrNoRows {
+			return connector.ErrorInstallationNotFound
+		}
+		return fmt.Errorf("failed to remove installation: %w", err)
 	}
 
 	return nil
@@ -319,6 +322,9 @@ func (m *DBClient) GetThingIDsByInstance(ctx context.Context, instanceId string)
 func (m *DBClient) RemoveInstance(ctx context.Context, instanceId string) error {
 	_, err := m.DB.Exec(statementRemoveInstanceById, instanceId)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return connector.ErrorInstanceNotFound
+		}
 		return fmt.Errorf("failed to remove instance")
 	}
 
