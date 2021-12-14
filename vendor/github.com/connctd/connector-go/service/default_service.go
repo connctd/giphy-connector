@@ -1,3 +1,7 @@
+// Package service implements a default service that can be used to quickly implement a connector.
+// Together with connector.ConnectorHandler it implements the whole connector protocol.
+// Developers can therefore focus on implementing technology specific details by implementing the Provider interface.
+// It will listen to the provider.UpdateChannel() and update thing properties and action requests.
 package service
 
 import (
@@ -7,22 +11,21 @@ import (
 	"time"
 
 	"github.com/connctd/connector-go"
-	"github.com/connctd/connector-go/db"
 	"github.com/connctd/restapi-go"
 	"github.com/go-logr/logr"
 )
 
-// ConnectorService provides the callback functions used by the HTTP handler
+// ConnectorService provides the callback functions used by the HTTP handler.
 type DefaultConnectorService struct {
 	logger         logr.Logger
-	db             db.Database
+	db             connector.Database
 	connctdClient  connector.Client
 	provider       connector.Provider
 	thingTemplates connector.ThingTemplates
 }
 
-// NewConnectorService returns a new instance of the default connector
-func NewConnectorService(dbClient db.Database, connctdClient connector.Client, provider connector.Provider, thingTemplates connector.ThingTemplates, logger logr.Logger) (*DefaultConnectorService, error) {
+// NewConnectorService returns a new instance of the default connector.
+func NewConnectorService(dbClient connector.Database, connctdClient connector.Client, provider connector.Provider, thingTemplates connector.ThingTemplates, logger logr.Logger) (*DefaultConnectorService, error) {
 	connector := &DefaultConnectorService{
 		logger,
 		dbClient,
@@ -57,7 +60,7 @@ func (s *DefaultConnectorService) init() error {
 	return nil
 }
 
-// AddInstallation is called by the HTTP handler when it receives an installation request
+// AddInstallation is called by the HTTP handler when it receives an installation request.
 // It will persist the new installation and its configuration and register the new installation with the provider.
 func (s *DefaultConnectorService) AddInstallation(ctx context.Context, request connector.InstallationRequest) (*connector.InstallationResponse, error) {
 	s.logger.WithValues("installationRequest", request).Info("Received an installation request")
@@ -119,21 +122,24 @@ func (s *DefaultConnectorService) AddInstance(ctx context.Context, request conne
 	}
 
 	thingTemplates := s.thingTemplates(request)
-	things := make([]string, len(thingTemplates))
+	thingMapping := make([]connector.ThingMapping, len(thingTemplates))
 	for i, thing := range thingTemplates {
-		thing, err := s.CreateThing(ctx, request.ID, thing)
+		thing, err := s.CreateThing(ctx, request.ID, thing, "")
 		if err != nil {
 			s.logger.Error(err, "Failed to create new thing")
 			return nil, err
 		}
-		things[i] = thing.ID
+		thingMapping[i] = connector.ThingMapping{
+			InstanceID: request.ID,
+			ThingID:    thing.ID,
+		}
 	}
 
 	s.provider.RegisterInstances(&connector.Instance{
 		ID:             request.ID,
 		InstallationID: request.InstallationID,
 		Token:          request.Token,
-		ThingIDs:       things,
+		ThingMapping:   thingMapping,
 		Configuration:  request.Configuration,
 	})
 
@@ -157,7 +163,7 @@ func (s *DefaultConnectorService) RemoveInstance(ctx context.Context, instanceId
 	return nil
 }
 
-// HandleAction is called by the HTTP handler when it retrieved an action request
+// HandleAction is called by the HTTP handler when it retrieved an action request.
 func (s *DefaultConnectorService) PerformAction(ctx context.Context, actionRequest connector.ActionRequest) (*connector.ActionResponse, error) {
 	s.logger.WithValues("actionRequest", actionRequest).Info("Received an action request")
 
@@ -192,7 +198,7 @@ func (s *DefaultConnectorService) PerformAction(ctx context.Context, actionReque
 	return nil, nil
 }
 
-// EventHandler handles events coming from the provider
+// EventHandler handles events coming from the provider.
 func (s *DefaultConnectorService) EventHandler(ctx context.Context) {
 	// wait for update events
 	go func() {
@@ -224,7 +230,7 @@ func (s *DefaultConnectorService) EventHandler(ctx context.Context) {
 // CreateThing can be called by the connector to register a new thing for the given instance.
 // It retrieves the instance token from the database and uses the token to create a new thing via the connctd API client.
 // The new thing ID is then stored in the database referencing the instance id.
-func (s *DefaultConnectorService) CreateThing(ctx context.Context, instanceId string, thing restapi.Thing) (*restapi.Thing, error) {
+func (s *DefaultConnectorService) CreateThing(ctx context.Context, instanceId string, thing restapi.Thing, externalId string) (*restapi.Thing, error) {
 	instance, err := s.db.GetInstance(ctx, instanceId)
 	if err != nil {
 		s.logger.WithValues("instanceId", instanceId).Error(err, "failed to retrieve instance from database")
@@ -240,7 +246,7 @@ func (s *DefaultConnectorService) CreateThing(ctx context.Context, instanceId st
 	}
 
 	// Save the thing ID with the instance, so we have a mapping of things to instances.
-	err = s.db.AddThingID(ctx, instanceId, createdThing.ID)
+	err = s.db.AddThingMapping(ctx, instanceId, createdThing.ID, externalId)
 	if err != nil {
 		s.logger.WithValues("thing", thing).Error(err, "failed to insert new Thing into database")
 		return nil, err

@@ -18,9 +18,9 @@ type signatureValidationHandler struct {
 	publicKey    ed25519.PublicKey
 }
 
-// NewSignatureValidationHandler creates a new handler capable of verifying the signature header
-// Validation can be influenced by passing a ValidationPreProcessor. Quite common
-// functionalities are offered by DefaultValidationPreProcessor and ProxiedRequestValidationPreProcessor
+// NewSignatureValidationHandler creates a new handler capable of verifying the signature header.
+// Validation can be influenced by passing a ValidationPreProcessor.
+// Common functionalities are offered by DefaultValidationPreProcessor and ProxiedRequestValidationPreProcessor
 func NewSignatureValidationHandler(validationPreProcessor ValidationPreProcessor, publicKey ed25519.PublicKey, next http.HandlerFunc) http.Handler {
 	return &signatureValidationHandler{preProcessor: validationPreProcessor, publicKey: publicKey, next: next}
 }
@@ -71,14 +71,12 @@ func (h *signatureValidationHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	}
 }
 
-// ValidationPreProcessor can be used to influence the signature validation algorithm
-// by returning a modified url struct. This becomes handy if your service is sitting behind
-// a proxy that modifies the original request headers which normally would lead to a
-// validation error
+// ValidationPreProcessor can be used to influence the signature validation algorithm by returning a modified url struct.
+// This becomes handy if your service is sitting behind a proxy that modifies the original request headers which normally would lead to a validation error.
 type ValidationPreProcessor func(r *http.Request) ValidationParameters
 
-// DefaultValidationPreProcessor extracts all relevant values from request fields
-// Use this processor if there are no proxies between connctd platform and your connector
+// DefaultValidationPreProcessor extracts all relevant values from request fields.
+// Use this processor if there are no proxies between connctd platform and your connector.
 func DefaultValidationPreProcessor() ValidationPreProcessor {
 	return func(r *http.Request) ValidationParameters {
 		// on server side scheme is not populated: https://github.com/golang/go/issues/28940
@@ -91,9 +89,8 @@ func DefaultValidationPreProcessor() ValidationPreProcessor {
 	}
 }
 
-// ProxiedRequestValidationPreProcessor allows passing modified headers to validate signature
-// function. This is necessary in case received request headers do not match up with
-// sent request headers because of e.g. proxies in between
+// ProxiedRequestValidationPreProcessor allows passing modified headers to the validate signature function.
+// This is necessary when received request headers do not match up with sent request headers because of e.g. proxies in between.
 func ProxiedRequestValidationPreProcessor(scheme string, host string) ValidationPreProcessor {
 	return func(r *http.Request) ValidationParameters {
 		return ValidationParameters{
@@ -104,9 +101,8 @@ func ProxiedRequestValidationPreProcessor(scheme string, host string) Validation
 	}
 }
 
-// AutoProxyRequestValidationPreProcessor is used to set the signature validation parameters
-// to header values provided by a reverse proxy. Your proxy must set the header X-Forwarded-Proto
-// to the original protocol used by the client and X-Forwarded-Host to the original host requested by the client.
+// AutoProxyRequestValidationPreProcessor is used to set the signature validation parameters to header values provided by a reverse proxy.
+// Your proxy must set the header X-Forwarded-Proto to the original protocol used by the client and X-Forwarded-Host to the original host requested by the client.
 func AutoProxyRequestValidationPreProcessor() ValidationPreProcessor {
 	return func(r *http.Request) ValidationParameters {
 		scheme := r.Header.Get("X-Forwarded-Proto")
@@ -127,14 +123,14 @@ func AutoProxyRequestValidationPreProcessor() ValidationPreProcessor {
 	}
 }
 
-// ValidationParameters reflects a list of parameters that are relevant for request signature validation
+// ValidationParameters reflects a list of parameters that are relevant for request signature validation.
 type ValidationParameters struct {
 	Scheme     string
 	Host       string
 	RequestURI string
 }
 
-// some error definitions
+// Possible errors returned by NewSignatureValidationHandler:
 var (
 	ErrorBadSignature  = api.NewError("BAD_SIGNATURE", "Signature seems to be invalid", http.StatusBadRequest)
 	ErrorSigningFailed = api.NewError("SIGNING_FAILED", "Failed to sign the request", http.StatusBadRequest)

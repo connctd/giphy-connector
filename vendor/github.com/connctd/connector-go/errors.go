@@ -1,40 +1,23 @@
 package connector
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"github.com/connctd/api-go"
 )
 
-// TODO: should we use api-go/errors.go instead? Also used in the signature validation.
+// Errors used in the service and ConnectorHandler
+// The ConnectorHandler expects errors of the type api.Error and will set the status code accordingly.
+// Developers can define new errors using api.NewError but this should not be necessary for the connector protocol.
 var (
-	ErrorBadContentType        = Error{Code: http.StatusBadRequest, Message: "Expected content type to be application/json"}
-	ErrorMissingInstanceID     = Error{Code: http.StatusBadRequest, Message: "Instance ID is missing"}
-	ErrorMissingInstallationID = Error{Code: http.StatusBadRequest, Message: "Installation ID is missing"}
-	ErrorBadRequestBody        = Error{Code: http.StatusBadRequest, Message: "Empty or malformed request body"}
-	ErrorInvalidJsonBody       = Error{Code: http.StatusBadRequest, Message: "Request body does not contain valid json"}
-	ErrorInstallationNotFound  = Error{Code: http.StatusNotFound, Message: "Installation not found"}
-	ErrorInstanceNotFound      = Error{Code: http.StatusNotFound, Message: "Instance not found"}
-	ErrorForbidden             = Error{Code: http.StatusForbidden, Message: "Insufficient rights"}
-	ErrorUnauthorized          = Error{Code: http.StatusUnauthorized, Message: "Not authorized"}
-	ErrorInternal              = Error{Code: http.StatusInternalServerError, Message: "Internal server error"}
+	ErrorBadContentType        = api.NewError("BAD_CONTENT_TYPE", "Expected content type to be application/json", http.StatusBadRequest)
+	ErrorMissingInstanceID     = api.NewError("MISSING_INSTANCE_ID", "Instance ID is missing", http.StatusBadRequest)
+	ErrorMissingInstallationID = api.NewError("MISSING_INSTALLATION_ID", "Installation ID is missing", http.StatusBadRequest)
+	ErrorBadRequestBody        = api.NewError("BAD_REQUEST_BODY", "Empty or malformed request body", http.StatusBadRequest)
+	ErrorInvalidJsonBody       = api.NewError("INVALID_JSON_BODY", "Request body does not contain valid json", http.StatusBadRequest)
+	ErrorInstallationNotFound  = api.NewError("INSTALLATION_NOT_FOUND", "Installation not found", http.StatusNotFound)
+	ErrorInstanceNotFound      = api.NewError("INSTANCE_NOT_FOUND", "Instance not found", http.StatusNotFound)
+	ErrorForbidden             = api.NewError("FORBIDDEN", "Insufficient rights", http.StatusForbidden)
+	ErrorUnauthorized          = api.NewError("NOT_AUTHORIZED", "Not authorized", http.StatusUnauthorized)
+	ErrorInternal              = api.NewError("INTERNAL_SERVER_ERROR", "Internal server error", http.StatusInternalServerError)
 )
-
-type Error struct {
-	Code    int
-	Message string
-}
-
-func (e *Error) WriteBody(w http.ResponseWriter) {
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(e.Code)
-	b, err := json.Marshal(e)
-	if err != nil {
-		w.Write([]byte("{\"err\":\"Failed to marshal error\"}"))
-	} else {
-		w.Write(b)
-	}
-}
-
-func (e Error) Error() string {
-	return e.Message
-}

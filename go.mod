@@ -4,6 +4,7 @@ go 1.17
 
 require github.com/sirupsen/logrus v1.8.1
 
+replace github.com/connctd/connector-go v0.0.0-20211208100942-8a48fcfdd12d => /home/sthh/Dev/connctd/connector-go
 require (
 	github.com/connctd/api-go v0.0.1 // indirect
 	github.com/connctd/connector-go v0.0.0-20211208100942-8a48fcfdd12d

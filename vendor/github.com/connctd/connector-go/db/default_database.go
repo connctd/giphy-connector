@@ -1,3 +1,5 @@
+// Package db implements default implementations for the database interface used by the default service.
+// It currently supports Mysql, Postgres and Sqlite3.
 package db
 
 import (
@@ -20,23 +22,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type Database interface {
-	AddInstallation(ctx context.Context, installationRequest connector.InstallationRequest) error
-	AddInstallationConfiguration(ctx context.Context, installationId string, config []connector.Configuration) error
-	GetInstallations(ctx context.Context) ([]*connector.Installation, error)
-	RemoveInstallation(ctx context.Context, installationId string) error
-
-	AddInstance(ctx context.Context, instantiationRequest connector.InstantiationRequest) error
-	AddInstanceConfiguration(ctx context.Context, instanceId string, config []connector.Configuration) error
-	GetInstance(ctx context.Context, instanceId string) (*connector.Instance, error)
-	GetInstances(ctx context.Context) ([]*connector.Instance, error)
-	GetInstanceByThingId(ctx context.Context, thingId string) (*connector.Instance, error)
-	GetInstanceConfiguration(ctx context.Context, instanceId string) ([]connector.Configuration, error)
-	RemoveInstance(ctx context.Context, instanceId string) error
-
-	AddThingID(ctx context.Context, instanceID string, thingID string) error
-}
-
 type DBOptions struct {
 	Driver DBDriverName
 	DSN    string
@@ -49,6 +34,7 @@ var DefaultOptions = &DBOptions{
 
 type DBDriverName string
 
+// Supported database drivers:
 var (
 	DriverMysql      = DBDriverName("mysql")
 	DriverPostgresql = DBDriverName("postgres")
@@ -71,17 +57,18 @@ var (
 	statementGetThingsByInstanceID        = `SELECT thing_id FROM instance_thing_mapping WHERE instance_id = ?`
 	statementRemoveInstanceById           = `DELETE FROM instances WHERE id = ?`
 
-	statementInsertThingId = `INSERT instance_thing_mapping (instance_id, thing_id) VALUES (?, ?)`
+	statementInsertThingId = `INSERT instance_thing_mapping (instance_id, thing_id, external_id) VALUES (?, ?, ?)`
 )
 
+// The default database layout:
 const (
-	statementCreateInstallationTable = `CREATE TABLE installations (
+	StatementCreateInstallationTable = `CREATE TABLE installations (
 		id CHAR (36) NOT NULL,
 		token TEXT NOT NULL,
 		UNIQUE(id)
 	)`
 
-	statementCreateInstanceTable = `CREATE TABLE instances (
+	StatementCreateInstanceTable = `CREATE TABLE instances (
 		id CHAR (36) NOT NULL,
 		token TEXT NOT NULL,
 		installation_id CHAR (36) NOT NULL,
@@ -91,14 +78,15 @@ const (
 			REFERENCES installations(id) ON DELETE CASCADE
 	)`
 
-	statementCreateInstaceThingMapping = `CREATE TABLE instance_thing_mapping (
+	StatementCreateInstaceThingMapping = `CREATE TABLE instance_thing_mapping (
 		instance_id CHAR (36) NOT NULL,
 		thing_id CHAR (36) NOT NULL,
+		external_id VARCHAR (255),
 		FOREIGN KEY (instance_id)
 			REFERENCES instances(id) ON DELETE CASCADE
 	)`
 
-	statementCreateInstallConfigTable = `CREATE TABLE installation_configuration (
+	StatementCreateInstallConfigTable = `CREATE TABLE installation_configuration (
 		installation_id CHAR (36) NOT NULL,
 		id CHAR (36) NOT NULL,
 		value VARCHAR (200) NOT NULL,
@@ -106,7 +94,7 @@ const (
 			REFERENCES installations(id) ON DELETE CASCADE
 	)`
 
-	statementCreateInstanceConfigTable = `CREATE TABLE instance_configuration (
+	StatementCreateInstanceConfigTable = `CREATE TABLE instance_configuration (
 		instance_id CHAR (36) NOT NULL,
 		id CHAR (36) NOT NULL,
 		value VARCHAR (200) NOT NULL,
@@ -115,12 +103,13 @@ const (
 	)`
 )
 
-var migrationQueries = []string{
-	statementCreateInstallationTable,
-	statementCreateInstanceTable,
-	statementCreateInstaceThingMapping,
-	statementCreateInstallConfigTable,
-	statementCreateInstanceConfigTable,
+// MigrationQueries will be executed when the connector calls Migrate:
+var MigrationQueries = []string{
+	StatementCreateInstallationTable,
+	StatementCreateInstanceTable,
+	StatementCreateInstaceThingMapping,
+	StatementCreateInstallConfigTable,
+	StatementCreateInstanceConfigTable,
 }
 
 type DBClient struct {
@@ -139,8 +128,12 @@ func NewDBClient(dbOptions *DBOptions, logger logr.Logger) (*DBClient, error) {
 	return &DBClient{db, logger}, nil
 }
 
+// Migrate will execute all queries in MigrationQueries
+// It returns error if any of the queries fails to execute.
+// Migrate is not called by the default service but may be called once by the connector to initially migrate a database.
+// Note that MigrationQueries can be overwritten.
 func (m *DBClient) Migrate() error {
-	for _, q := range migrationQueries {
+	for _, q := range MigrationQueries {
 		_, err := m.DB.Exec(q)
 		if err != nil {
 			return fmt.Errorf("failed to migrate db (query: %v) %v", q, err)
@@ -242,11 +235,11 @@ func (m *DBClient) GetInstance(ctx context.Context, instanceId string) (*connect
 	}
 	instance.Configuration = config
 
-	things, err := m.GetThingIDsByInstance(ctx, instance.ID)
+	thingMapping, err := m.GetMappingByInstanceId(ctx, instance.ID)
 	if err != nil {
 		return nil, err
 	}
-	instance.ThingIDs = things
+	instance.ThingMapping = thingMapping
 
 	return &instance, nil
 }
@@ -265,11 +258,11 @@ func (m *DBClient) GetInstances(ctx context.Context) ([]*connector.Instance, err
 		}
 		instances[i].Configuration = config
 
-		things, err := m.GetThingIDsByInstance(ctx, instance.ID)
+		thingMapping, err := m.GetMappingByInstanceId(ctx, instance.ID)
 		if err != nil {
 			return nil, err
 		}
-		instance.ThingIDs = things
+		instance.ThingMapping = thingMapping
 	}
 	return instances, nil
 }
@@ -288,11 +281,11 @@ func (m *DBClient) GetInstanceByThingId(ctx context.Context, thingId string) (*c
 	}
 	instance.Configuration = config
 
-	things, err := m.GetThingIDsByInstance(ctx, instance.ID)
+	thingMapping, err := m.GetMappingByInstanceId(ctx, instance.ID)
 	if err != nil {
 		return nil, err
 	}
-	instance.ThingIDs = things
+	instance.ThingMapping = thingMapping
 
 	return &instance, nil
 }
@@ -308,14 +301,14 @@ func (m *DBClient) GetInstanceConfiguration(ctx context.Context, instanceId stri
 	return configurations, nil
 }
 
-// GetThingIDsByInstance returns all things mapped to the instance with the given id.
-func (m *DBClient) GetThingIDsByInstance(ctx context.Context, instanceId string) ([]string, error) {
-	var thingIDs []string
-	err := m.DB.Select(&thingIDs, statementGetThingsByInstanceID, instanceId)
+// GetMappingByInstanceId returns all things mapped to the instance with the given id.
+func (m *DBClient) GetMappingByInstanceId(ctx context.Context, instanceId string) ([]connector.ThingMapping, error) {
+	var thingMappings []connector.ThingMapping
+	err := m.DB.Select(&thingMappings, statementGetThingsByInstanceID, instanceId)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("failed to retrieve thing ids %v", err)
 	}
-	return thingIDs, nil
+	return thingMappings, nil
 }
 
 // RemoveInstance removes the instance with the given id from the database.
@@ -331,9 +324,9 @@ func (m *DBClient) RemoveInstance(ctx context.Context, instanceId string) error 
 	return nil
 }
 
-// AddThingID updates the instance with the thing ID.
-func (m *DBClient) AddThingID(ctx context.Context, instanceId string, thingId string) error {
-	_, err := m.DB.Exec(statementInsertThingId, instanceId, thingId)
+// AddThingMapping adds a mapping of the instance id to a thing and external id.
+func (m *DBClient) AddThingMapping(ctx context.Context, instanceId string, thingId string, externalId string) error {
+	_, err := m.DB.Exec(statementInsertThingId, instanceId, thingId, externalId)
 	if err != nil {
 		return fmt.Errorf("failed to insert thing id: %w", err)
 	}

@@ -40,11 +40,10 @@ func (h *GiphyProvider) Run() {
 // periodicUpdate starts an endless loop which will periodically update the random component of each instance
 func (h *GiphyProvider) periodicUpdate() {
 	for {
-		h.RemoveInstances()
-		h.AddNewInstances()
+		h.Update()
 
 		for _, instance := range h.Instances {
-			if len(instance.ThingIDs) <= 0 {
+			if len(instance.ThingMapping) <= 0 {
 				logrus.WithField("instance", instance).Info("missing thing id")
 				continue
 			}
@@ -56,7 +55,7 @@ func (h *GiphyProvider) periodicUpdate() {
 			update := connector.UpdateEvent{
 				PropertyUpdateEvent: &connector.PropertyUpdateEvent{
 					InstanceId:  instance.ID,
-					ThingId:     instance.ThingIDs[0],
+					ThingId:     instance.ThingMapping[0].ThingID,
 					ComponentId: RandomComponentId,
 					PropertyId:  RandomPropertyId,
 					Value:       randomGif,
@@ -89,7 +88,7 @@ func (h *GiphyProvider) actionHandler() {
 			} else {
 				update.ActionEvent.ActionResponse.Status = restapi.ActionRequestStatusCompleted
 				update.PropertyUpdateEvent = &connector.PropertyUpdateEvent{
-					ThingId:     pendingAction.Instance.ThingIDs[0],
+					ThingId:     pendingAction.Instance.ThingMapping[0].ThingID,
 					InstanceId:  pendingAction.Instance.ID,
 					ComponentId: SearchComponentId,
 					PropertyId:  SearchPropertyId,
