@@ -46,12 +46,15 @@ func main() {
 		panic("Failed to connect to database: " + err.Error())
 	}
 
+	// Migrate the database if the flag was set
+	// The database should only be migrated once
 	if *migrate {
 		if err := dbClient.Migrate(); err != nil {
 			panic("Failed to migrate database " + err.Error())
 		}
 	}
 
+	// Create a new client for the connctd API
 	connctdClient, err := connector.NewClient(nil, connector.DefaultLogger)
 	if err != nil {
 		panic("Failed to create connctd client: " + err.Error())

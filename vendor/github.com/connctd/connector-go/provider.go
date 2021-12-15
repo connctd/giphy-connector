@@ -16,6 +16,14 @@ type Provider interface {
 	// The provider can push updates to the underlying channel or use directly use the connctd API client.
 	UpdateChannel() <-chan UpdateEvent
 
+	// RequestAction is called by the connector service when it received an action request.
+	// The provider can execute the action synchronously and return an ActionRequestStatusCompleted or ActionRequestStatusFailed.
+	// If it returns ActionRequestStatusFailed it is expected to also return an error with details on the failing condition.
+	// In both cases an appropriate connector.ActionResponse is returned to the platform.
+	// The provider can also decide to execute the action request asynchronously and return an ActionRequestStatusPending.
+	// It is then the responsibility of the provider to update the action request as soon as it is finished.
+	RequestAction(ctx context.Context, instance *Instance, actionRequest ActionRequest) (restapi.ActionRequestStatus, error)
+
 	// RegisterInstallations is called by the connector service to register new installations
 	// Installations are registered whenever the service received an successful installation request or when the connector is started.
 	RegisterInstallations(installations ...*Installation) error
@@ -29,14 +37,6 @@ type Provider interface {
 
 	// RemoveInstance is called by the service if it received an instance removal request.
 	RemoveInstance(instanceId string) error
-
-	// RequestAction is called by the connector service when it received an action request.
-	// The provider can execute the action synchronously and return an ActionRequestStatusCompleted or ActionRequestStatusFailed.
-	// If it returns ActionRequestStatusFailed it is expected to also return an error with details on the failing condition.
-	// In both cases an appropriate connector.ActionResponse is returned to the platform.
-	// The provider can also decide to execute the action request asynchronously and return an ActionRequestStatusPending.
-	// It is then the responsibility of the provider to update the action request as soon as it is finished.
-	RequestAction(ctx context.Context, instance *Instance, actionRequest ActionRequest) (restapi.ActionRequestStatus, error)
 }
 
 // UpdateEvents are pushed to the UpdateChannel.
@@ -53,9 +53,9 @@ type UpdateEvent struct {
 // ActionEvent is used to propagate action request results to the service.
 // See UpdateEvent for details.
 type ActionEvent struct {
-	InstanceId      string
-	ActionResponse  *ActionResponse
-	ActionRequestId string
+	InstanceId string
+	RequestId  string
+	Response   *ActionResponse
 }
 
 // ActionEvent is used to propagate property updates to the service.

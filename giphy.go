@@ -70,32 +70,46 @@ func (h *GiphyProvider) periodicUpdate() {
 // actionHandler will listen for and execute action requests
 func (h *GiphyProvider) actionHandler() {
 	for pendingAction := range h.ActionChannel() {
+		update := connector.UpdateEvent{
+			ActionEvent: &connector.ActionEvent{
+				InstanceId: pendingAction.Instance.ID,
+				RequestId:  pendingAction.ID,
+				Response:   &connector.ActionResponse{},
+			},
+		}
+
 		switch pendingAction.ActionID {
 		case "search":
-			update := connector.UpdateEvent{
-				ActionEvent: &connector.ActionEvent{
-					ActionResponse:  &connector.ActionResponse{},
-					ActionRequestId: pendingAction.ID,
-					InstanceId:      pendingAction.Instance.ID,
-				},
-			}
 			keyword := pendingAction.Parameters["keyword"]
 			result, err := h.getSearchResult(pendingAction.Instance, keyword)
+
 			if err != nil {
-				update.ActionEvent.ActionResponse.Status = restapi.ActionRequestStatusFailed
-				update.ActionEvent.ActionResponse.Error = err.Error()
-				h.UpdateEvent(update)
-			} else {
-				update.ActionEvent.ActionResponse.Status = restapi.ActionRequestStatusCompleted
-				update.PropertyUpdateEvent = &connector.PropertyUpdateEvent{
-					ThingId:     pendingAction.Instance.ThingMapping[0].ThingID,
-					InstanceId:  pendingAction.Instance.ID,
-					ComponentId: SearchComponentId,
-					PropertyId:  SearchPropertyId,
-					Value:       result,
+				update.ActionEvent.Response = &connector.ActionResponse{
+					Status: restapi.ActionRequestStatusFailed,
+					Error:  err.Error(),
 				}
 				h.UpdateEvent(update)
+				continue
 			}
+
+			update.ActionEvent.Response = &connector.ActionResponse{
+				Status: restapi.ActionRequestStatusCompleted,
+			}
+			update.PropertyUpdateEvent = &connector.PropertyUpdateEvent{
+				ThingId:     pendingAction.Instance.ThingMapping[0].ThingID,
+				InstanceId:  pendingAction.Instance.ID,
+				ComponentId: SearchComponentId,
+				PropertyId:  SearchPropertyId,
+				Value:       result,
+			}
+			h.UpdateEvent(update)
+
+		default:
+			update.ActionEvent.Response = &connector.ActionResponse{
+				Status: restapi.ActionRequestStatusFailed,
+				Error:  "Action not supported",
+			}
+			h.UpdateEvent(update)
 		}
 	}
 }
