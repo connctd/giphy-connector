@@ -30,3 +30,10 @@ You can deploy it on a hosting provider of your choice or run it locally and exp
 The connector can be build with the provided Makefile (`make build`).
 To run the connector the environment variable `GIPHY_CONNECTOR_PUBLIC_KEY` must be set to your Giphy API key.
 You can also add the API key to `run.sh` and simply run this script to start the connector.
+
+By default the connector uses a Sqlite database which does not need any configuration.
+The SDK also supports Postgresql and Mysql.
+You have to modify `main.go` in order to use them.
+You can find an example for Mysql in `main.go`.
+To initially create the database layout the connector should be started with the `-migrate` flag on its first run.
+See `run.sh` for an example on how to do this.
