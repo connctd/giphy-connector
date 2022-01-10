@@ -119,7 +119,6 @@ type ActionRequest struct {
 
 // ActionResponse can be sent in order to inform about the state of an action.
 type ActionResponse struct {
-	ID     string                      `json:"id"`
 	Status restapi.ActionRequestStatus `json:"status"`
 	Error  string                      `json:"error"`
 }

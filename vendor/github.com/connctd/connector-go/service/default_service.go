@@ -163,7 +163,7 @@ func (s *DefaultConnectorService) RemoveInstance(ctx context.Context, instanceId
 	return nil
 }
 
-// HandleAction is called by the HTTP handler when it retrieved an action request.
+// HandleAction is called by the HTTP handler when it receives an action request.
 func (s *DefaultConnectorService) PerformAction(ctx context.Context, actionRequest connector.ActionRequest) (*connector.ActionResponse, error) {
 	s.logger.WithValues("actionRequest", actionRequest).Info("Received an action request")
 

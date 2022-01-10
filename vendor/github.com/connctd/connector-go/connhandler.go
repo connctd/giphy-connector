@@ -254,17 +254,13 @@ func PerformAction(service ConnectorService) http.HandlerFunc {
 		}
 
 		if response != nil {
-			if response.ID == "" {
-				response.ID = req.ID
-			}
 			b, err := json.Marshal(response)
 			if err != nil {
 				writeError(w, err)
 				return
 			}
 			w.Header().Add("Content-Type", "application/json")
-			// TODO: should this be http.StatusAccepted?
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusAccepted)
 			w.Write(b)
 			return
 		}
