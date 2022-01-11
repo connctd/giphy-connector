@@ -8,7 +8,6 @@ import (
 	"github.com/connctd/connector-go"
 	"github.com/connctd/connector-go/provider"
 
-	"github.com/connctd/restapi-go"
 	giphyClient "github.com/peterhellberg/giphy"
 	"github.com/sirupsen/logrus"
 )
@@ -85,7 +84,7 @@ func (h *GiphyProvider) actionHandler() {
 
 			if err != nil {
 				update.ActionEvent.Response = &connector.ActionResponse{
-					Status: restapi.ActionRequestStatusFailed,
+					Status: connector.ActionRequestStatusFailed,
 					Error:  err.Error(),
 				}
 				h.UpdateEvent(update)
@@ -93,7 +92,7 @@ func (h *GiphyProvider) actionHandler() {
 			}
 
 			update.ActionEvent.Response = &connector.ActionResponse{
-				Status: restapi.ActionRequestStatusCompleted,
+				Status: connector.ActionRequestStatusCompleted,
 			}
 			update.PropertyUpdateEvent = &connector.PropertyUpdateEvent{
 				ThingId:     pendingAction.Instance.ThingMapping[0].ThingID,
@@ -106,7 +105,7 @@ func (h *GiphyProvider) actionHandler() {
 
 		default:
 			update.ActionEvent.Response = &connector.ActionResponse{
-				Status: restapi.ActionRequestStatusFailed,
+				Status: connector.ActionRequestStatusFailed,
 				Error:  "Action not supported",
 			}
 			h.UpdateEvent(update)

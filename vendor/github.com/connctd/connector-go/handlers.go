@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/connctd/api-go"
-	"github.com/connctd/api-go/crypto"
+	"github.com/connctd/connector-go/api"
+	"github.com/connctd/connector-go/api/crypto"
 )
 
 type signatureValidationHandler struct {

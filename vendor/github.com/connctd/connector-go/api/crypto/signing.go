@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"net/http"
 
-	"github.com/connctd/api-go"
+	"github.com/connctd/connector-go/api"
 )
 
 // SignedHeaderKey defines a header field name

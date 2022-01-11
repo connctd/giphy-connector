@@ -5,9 +5,7 @@ go 1.17
 require github.com/sirupsen/logrus v1.8.1
 
 require (
-	github.com/connctd/api-go v0.0.1 // indirect
-	github.com/connctd/connector-go v0.0.0-20220110071808-7c333b7db072
-	github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2
+	github.com/connctd/connector-go v0.0.0-20220111124524-4a5c887e9d41
 	github.com/go-logr/stdr v0.3.0 // indirect
 	github.com/peterhellberg/giphy v0.0.0-20171214132724-091ba7d7516d
 	golang.org/x/sys v0.0.0-20191026070338-33540a1f6037 // indirect

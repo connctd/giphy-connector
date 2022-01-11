@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/connctd/connector-go"
-	"github.com/connctd/restapi-go"
+	"github.com/connctd/connector-go/models"
 )
 
 const (
@@ -21,16 +21,16 @@ const (
 // The thing will have to components.
 // randomComponent will periodically updated by a new random value.
 // searchComponent will only be updated when a search action is triggered.
-func thingTemplate(request connector.InstantiationRequest) []restapi.Thing {
-	return []restapi.Thing{
+func thingTemplate(request connector.InstantiationRequest) []models.Thing {
+	return []models.Thing{
 		{
 			Name:            "Giphy",
 			Manufacturer:    "IoT connctd GmbH",
 			DisplayType:     "core.SENSOR",
 			MainComponentID: RandomComponentId,
 			Status:          "AVAILABLE",
-			Attributes:      []restapi.ThingAttribute{},
-			Components: []restapi.Component{
+			Attributes:      []models.ThingAttribute{},
+			Components: []models.Component{
 				{
 					ID:            RandomComponentId,
 					Name:          "Giphy random component",
@@ -38,15 +38,15 @@ func thingTemplate(request connector.InstantiationRequest) []restapi.Thing {
 					Capabilities: []string{
 						"core.MEASURE",
 					},
-					Properties: []restapi.Property{
+					Properties: []models.Property{
 						{
 							ID:    RandomPropertyId,
 							Name:  "Giphy random property",
 							Value: "",
-							Type:  restapi.ValueTypeString,
+							Type:  models.ValueTypeString,
 						},
 					},
-					Actions: []restapi.Action{},
+					Actions: []models.Action{},
 				},
 				{
 					ID:            SearchComponentId,
@@ -55,21 +55,21 @@ func thingTemplate(request connector.InstantiationRequest) []restapi.Thing {
 					Capabilities: []string{
 						"core.SEARCH",
 					},
-					Properties: []restapi.Property{
+					Properties: []models.Property{
 						{
 							ID:   SearchPropertyId,
 							Name: "Giphy search property",
-							Type: restapi.ValueTypeString,
+							Type: models.ValueTypeString,
 						},
 					},
-					Actions: []restapi.Action{
+					Actions: []models.Action{
 						{
 							ID:   SearchActionId,
 							Name: "Giphy search action",
-							Parameters: []restapi.ActionParameter{
+							Parameters: []models.ActionParameter{
 								{
 									Name: SearchActionParameterId,
-									Type: restapi.ValueTypeString,
+									Type: models.ValueTypeString,
 								},
 							},
 						},

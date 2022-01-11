@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	"github.com/connctd/connector-go"
-	"github.com/connctd/restapi-go"
 )
 
 var (
@@ -109,9 +108,9 @@ func (p *DefaultProvider) RemoveInstallation(installationId string) error {
 // The provider implementation is responsible for listening to that channel and sending an appropriate response
 // to the connector using the updates channel.
 // Synchronous actions can be implemented by overriding this method and returning a non pending action request status.
-func (p *DefaultProvider) RequestAction(ctx context.Context, instance *connector.Instance, actionRequest connector.ActionRequest) (restapi.ActionRequestStatus, error) {
+func (p *DefaultProvider) RequestAction(ctx context.Context, instance *connector.Instance, actionRequest connector.ActionRequest) (connector.ActionRequestStatus, error) {
 	p.ActionEvent(PendingAction{actionRequest, instance})
-	return restapi.ActionRequestStatusPending, nil
+	return connector.ActionRequestStatusPending, nil
 }
 
 // AddNewInstallations will add all newly registered installations to p.Instances.

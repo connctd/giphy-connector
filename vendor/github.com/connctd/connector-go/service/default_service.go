@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/connctd/connector-go"
-	"github.com/connctd/restapi-go"
+	"github.com/connctd/connector-go/models"
 	"github.com/go-logr/logr"
 )
 
@@ -170,7 +170,7 @@ func (s *DefaultConnectorService) PerformAction(ctx context.Context, actionReque
 	instance, err := s.db.GetInstanceByThingId(ctx, actionRequest.ThingID)
 	if err != nil {
 		s.logger.WithValues("actionRequest", actionRequest).Error(err, "Could not retrieve the instance for thing ID")
-		return &connector.ActionResponse{Status: restapi.ActionRequestStatusFailed, Error: "thing ID was not found at connector"}, nil
+		return &connector.ActionResponse{Status: connector.ActionRequestStatusFailed, Error: "thing ID was not found at connector"}, nil
 	}
 
 	status, err := s.provider.RequestAction(ctx, instance, actionRequest)
@@ -180,16 +180,16 @@ func (s *DefaultConnectorService) PerformAction(ctx context.Context, actionReque
 	}
 
 	switch status {
-	case restapi.ActionRequestStatusCompleted:
+	case connector.ActionRequestStatusCompleted:
 		// The action is completed.
 		// We send no error and no response body and the handler will return status code 204.
 		return nil, nil
-	case restapi.ActionRequestStatusPending:
+	case connector.ActionRequestStatusPending:
 		// The action is not completed yet.
 		// We send no error but an ActionResponse and the handler will return status code 200.
 		// We have to send an status update when the action is completed.
 		return &connector.ActionResponse{Status: status}, nil
-	case restapi.ActionRequestStatusFailed:
+	case connector.ActionRequestStatusFailed:
 		// This should not happen.
 		// The provider is expected to return an error if the action failed, which we catch above.
 		s.logger.WithValues("actionRequest", actionRequest).Error(errors.New("implementation should return an error if action failed"), "connector did not send an error but set action state to FAILED")
@@ -214,7 +214,7 @@ func (s *DefaultConnectorService) EventHandler(ctx context.Context) {
 			if update.ActionEvent != nil {
 				actionEvent := update.ActionEvent
 				if err != nil {
-					actionEvent.Response.Status = restapi.ActionRequestStatusFailed
+					actionEvent.Response.Status = connector.ActionRequestStatusFailed
 					actionEvent.Response.Error = fmt.Sprintf("failed to update property %v", err)
 					s.logger.Error(err, "action failed: failed to update property")
 				}
@@ -230,7 +230,7 @@ func (s *DefaultConnectorService) EventHandler(ctx context.Context) {
 // CreateThing can be called by the connector to register a new thing for the given instance.
 // It retrieves the instance token from the database and uses the token to create a new thing via the connctd API client.
 // The new thing ID is then stored in the database referencing the instance id.
-func (s *DefaultConnectorService) CreateThing(ctx context.Context, instanceId string, thing restapi.Thing, externalId string) (*restapi.Thing, error) {
+func (s *DefaultConnectorService) CreateThing(ctx context.Context, instanceId string, thing models.Thing, externalId string) (*models.Thing, error) {
 	instance, err := s.db.GetInstance(ctx, instanceId)
 	if err != nil {
 		s.logger.WithValues("instanceId", instanceId).Error(err, "failed to retrieve instance from database")

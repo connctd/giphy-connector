@@ -1,13 +1,8 @@
 github.com/bitly/go-hostpool v0.0.0-20171023180738-a3a6125de932/go.mod h1:NOuUCSz6Q9T7+igc/hlvDOUdtWKryOrtFyIVABv/p7k=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dRnpXw/yCqJaO+ZrUyxD+3VXMFFr56k5XYrpB4=
-github.com/connctd/api-go v0.0.1 h1:uPaViJQnWzQEo0xYGJOnhAAyviR8eJZZIkWrJ48irDU=
 github.com/connctd/api-go v0.0.1/go.mod h1:B1YXvl8/5TvUB1TNoUbpVq+KEqNUZQUjF6nmdKtTG+s=
-github.com/connctd/connector-go v0.0.0-20211208100942-8a48fcfdd12d h1:iESkvQU1WbQ3iyEEeMcrZrKIrpLVBhPHt0RtPYfBRAI=
-github.com/connctd/connector-go v0.0.0-20211208100942-8a48fcfdd12d/go.mod h1:izlE3WHkEhk57e+gDgBOjBu0X80RVcpLbh+1beVM+Qs=
-github.com/connctd/connector-go v0.0.0-20220110071808-7c333b7db072 h1:Syrt9nTGvP6MbvYt3L2FjPjaQKkaQiMyRUmxI5USRQs=
-github.com/connctd/connector-go v0.0.0-20220110071808-7c333b7db072/go.mod h1:izlE3WHkEhk57e+gDgBOjBu0X80RVcpLbh+1beVM+Qs=
-github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2 h1:igoL9tMk2KbHfreEENmuzheaJ9PuQ9biyDwnBkO4Bzk=
-github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2/go.mod h1:LcHfnyb/K2HNcnYBj5UlWgIcm32hduyIbGSHS9r8hK4=
+github.com/connctd/connector-go v0.0.0-20220111124524-4a5c887e9d41 h1:wV9Deqz7x/68L8hUuYSRnt5HTi/MHnbkQdAdJXNCE6s=
+github.com/connctd/connector-go v0.0.0-20220111124524-4a5c887e9d41/go.mod h1:2bwkihge8FqrpEofiGYCrrpKmwTIQLnICVMEow4mjGM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

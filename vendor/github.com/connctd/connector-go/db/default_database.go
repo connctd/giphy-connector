@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/connctd/connector-go"
+	"github.com/connctd/connector-go/api"
 
 	// registers mysql driver at db journeys registry
 	_ "github.com/db-journey/mysql-driver"
@@ -191,7 +192,7 @@ func (m *DBClient) RemoveInstallation(ctx context.Context, installationId string
 	_, err := m.DB.Exec(statementRemoveInstallationById, installationId)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return connector.ErrorInstallationNotFound
+			return api.ErrorInstallationNotFound
 		}
 		return fmt.Errorf("failed to remove installation: %w", err)
 	}
@@ -316,7 +317,7 @@ func (m *DBClient) RemoveInstance(ctx context.Context, instanceId string) error 
 	_, err := m.DB.Exec(statementRemoveInstanceById, instanceId)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return connector.ErrorInstanceNotFound
+			return api.ErrorInstanceNotFound
 		}
 		return fmt.Errorf("failed to remove instance")
 	}

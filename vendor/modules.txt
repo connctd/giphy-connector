@@ -1,16 +1,12 @@
-# github.com/connctd/api-go v0.0.1
-## explicit; go 1.14
-github.com/connctd/api-go
-github.com/connctd/api-go/crypto
-# github.com/connctd/connector-go v0.0.0-20220110071808-7c333b7db072
+# github.com/connctd/connector-go v0.0.0-20220111124524-4a5c887e9d41
 ## explicit; go 1.14
 github.com/connctd/connector-go
+github.com/connctd/connector-go/api
+github.com/connctd/connector-go/api/crypto
 github.com/connctd/connector-go/db
+github.com/connctd/connector-go/models
 github.com/connctd/connector-go/provider
 github.com/connctd/connector-go/service
-# github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2
-## explicit; go 1.14
-github.com/connctd/restapi-go
 # github.com/db-journey/migrate v2.0.0+incompatible
 ## explicit
 github.com/db-journey/migrate/direction

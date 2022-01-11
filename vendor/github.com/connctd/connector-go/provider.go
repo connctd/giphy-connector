@@ -2,8 +2,6 @@ package connector
 
 import (
 	"context"
-
-	"github.com/connctd/restapi-go"
 )
 
 // The Provider interface is used in the default service to implement all technology specific details.
@@ -22,7 +20,7 @@ type Provider interface {
 	// In both cases an appropriate connector.ActionResponse is returned to the platform.
 	// The provider can also decide to execute the action request asynchronously and return an ActionRequestStatusPending.
 	// It is then the responsibility of the provider to update the action request as soon as it is finished.
-	RequestAction(ctx context.Context, instance *Instance, actionRequest ActionRequest) (restapi.ActionRequestStatus, error)
+	RequestAction(ctx context.Context, instance *Instance, actionRequest ActionRequest) (ActionRequestStatus, error)
 
 	// RegisterInstallations is called by the connector service to register new installations
 	// Installations are registered whenever the service received an successful installation request or when the connector is started.

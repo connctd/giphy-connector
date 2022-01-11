@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/connctd/restapi-go"
+	"github.com/connctd/connector-go/models"
 )
 
 // Possible step types:
@@ -88,7 +88,7 @@ type Step struct {
 
 // AddThingRequest is used to create a new thing on the connctd platform.
 type AddThingRequest struct {
-	Thing restapi.Thing `json:"thing"`
+	Thing models.Thing `json:"thing"`
 }
 
 // AddThingResponse describes the response sent by connctd when thing creation was successful.
@@ -104,27 +104,38 @@ type UpdateThingPropertyValueRequest struct {
 
 // UpdateThingStatusRequest allows updating the status of a thing.
 type UpdateThingStatusRequest struct {
-	Status restapi.StatusType `json:"status"`
+	Status models.StatusType `json:"status"`
 }
 
 // ActionRequest is sent by connctd platform in order to trigger an action.
 type ActionRequest struct {
-	ID          string                      `json:"id"`
-	ThingID     string                      `json:"thingId"`
-	ComponentID string                      `json:"componentId"`
-	ActionID    string                      `json:"actionId"`
-	Status      restapi.ActionRequestStatus `json:"status"`
-	Parameters  map[string]string           `json:"parameters"`
+	ID          string              `json:"id"`
+	ThingID     string              `json:"thingId"`
+	ComponentID string              `json:"componentId"`
+	ActionID    string              `json:"actionId"`
+	Status      ActionRequestStatus `json:"status"`
+	Parameters  map[string]string   `json:"parameters"`
 }
+
+// ActionRequestStatus indicates the status of an action request.
+type ActionRequestStatus string
+
+const (
+	ActionRequestStatusPending   ActionRequestStatus = "PENDING"
+	ActionRequestStatusCompleted ActionRequestStatus = "COMPLETED"
+	ActionRequestStatusFailed    ActionRequestStatus = "FAILED"
+	ActionRequestStatusCanceled  ActionRequestStatus = "CANCELED"
+)
 
 // ActionResponse can be sent in order to inform about the state of an action.
 type ActionResponse struct {
-	Status restapi.ActionRequestStatus `json:"status"`
-	Error  string                      `json:"error"`
+	ID     string              `json:"id"`
+	Status ActionRequestStatus `json:"status"`
+	Error  string              `json:"error"`
 }
 
 // ActionRequestStatusUpdate allows a connector to update the status of an action.
 type ActionRequestStatusUpdate struct {
-	Status restapi.ActionRequestStatus `json:"status"`
-	Error  string                      `json:"error"`
+	Status ActionRequestStatus `json:"status"`
+	Error  string              `json:"error"`
 }
