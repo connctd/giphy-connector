@@ -37,3 +37,7 @@ You have to modify `main.go` in order to use them.
 You can find an example for Mysql in `main.go`.
 To initially create the database layout the connector should be started with the `-migrate` flag on its first run.
 See `run.sh` for an example on how to do this.
+
+## Contact
+
+Please use the provided templates for bug reports and feature requests and feel free to contact connctd at info@connctd.com.
