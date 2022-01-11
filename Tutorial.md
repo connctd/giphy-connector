@@ -82,7 +82,7 @@ This allows the provider to access configuration parameters specific to a instal
 The SDK contains a default provider which handles registrations and provides an update channel and an asynchronous action handler.
 The default provider is meant to be embedded and extended by the connector and all methods can easily be overwritten if they do not fit a specific connector.
 
-Using the default implementations connector, developing a new connector breaks down to two basic tasks:
+Using the default implementations, developing a new connector breaks down to two basic tasks:
 
 1. Defining the things we want to create to represent the technology
 2. Implementing the features specific to the technology
