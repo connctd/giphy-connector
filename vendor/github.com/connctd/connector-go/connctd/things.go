@@ -1,4 +1,4 @@
-package models
+package connctd
 
 import "time"
 
@@ -72,7 +72,7 @@ const (
 )
 
 var (
-	// AllValueTypes declares list of possbile value types
+	// AllValueTypes declares list of possible value types
 	AllValueTypes = map[ValueType]struct{}{
 		ValueTypeNumber:  {},
 		ValueTypeString:  {},

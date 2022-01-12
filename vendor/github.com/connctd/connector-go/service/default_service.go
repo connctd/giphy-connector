@@ -8,10 +8,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/connctd/connector-go/connctd"
 	"time"
 
 	"github.com/connctd/connector-go"
-	"github.com/connctd/connector-go/models"
 	"github.com/go-logr/logr"
 )
 
@@ -230,7 +230,7 @@ func (s *DefaultConnectorService) EventHandler(ctx context.Context) {
 // CreateThing can be called by the connector to register a new thing for the given instance.
 // It retrieves the instance token from the database and uses the token to create a new thing via the connctd API client.
 // The new thing ID is then stored in the database referencing the instance id.
-func (s *DefaultConnectorService) CreateThing(ctx context.Context, instanceId string, thing models.Thing, externalId string) (*models.Thing, error) {
+func (s *DefaultConnectorService) CreateThing(ctx context.Context, instanceId string, thing connctd.Thing, externalId string) (*connctd.Thing, error) {
 	instance, err := s.db.GetInstance(ctx, instanceId)
 	if err != nil {
 		s.logger.WithValues("instanceId", instanceId).Error(err, "failed to retrieve instance from database")

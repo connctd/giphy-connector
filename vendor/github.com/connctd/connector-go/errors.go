@@ -1,4 +1,4 @@
-package api
+package connector
 
 import (
 	"encoding/json"
@@ -6,8 +6,8 @@ import (
 )
 
 // Errors used in the service and ConnectorHandler
-// The ConnectorHandler expects errors of the type api.Error and will set the status code accordingly.
-// Developers can define new errors using api.NewError but this should not be necessary for the connector protocol.
+// The ConnectorHandler expects errors of the type connector.Error and will set the status code accordingly.
+// Developers can define new errors using connector.NewError but this should not be necessary for the connector protocol.
 var (
 	ErrorBadContentType        = NewError("BAD_CONTENT_TYPE", "Expected content type to be application/json", http.StatusBadRequest)
 	ErrorMissingInstanceID     = NewError("MISSING_INSTANCE_ID", "Instance ID is missing", http.StatusBadRequest)

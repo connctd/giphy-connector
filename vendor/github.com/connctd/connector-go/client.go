@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/connctd/connector-go/connctd"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -17,7 +18,6 @@ import (
 
 	"path"
 
-	"github.com/connctd/connector-go/models"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/stdr"
 )
@@ -51,14 +51,14 @@ type Client interface {
 	// CreateThing can be used to create a thing.
 	// The ID of the newly created thing is returned if the operation was successful.
 	// Otherwise an error is returned.
-	CreateThing(ctx context.Context, token InstantiationToken, thing models.Thing) (result models.Thing, err error)
+	CreateThing(ctx context.Context, token InstantiationToken, thing connctd.Thing) (result connctd.Thing, err error)
 
 	// It returns an error if the update was not successful.
 	UpdateThingPropertyValue(ctx context.Context, token InstantiationToken, thingID string, componentID string, propertyID string, value string, lastUpdate time.Time) error
 
 	// UpdateThingStatus updated the status of a thing.
 	// It can be used to set the availability of a thing.
-	UpdateThingStatus(ctx context.Context, token InstantiationToken, thingID string, status models.StatusType) error
+	UpdateThingStatus(ctx context.Context, token InstantiationToken, thingID string, status connctd.StatusType) error
 
 	// UpdateActionStatus can be used to inform the connctd platform about the new state of an action request.
 	// It must be used to finish pending action request.
@@ -69,7 +69,7 @@ type Client interface {
 	// It must be called if the installation requires multiple steps, after it is finished.
 	UpdateInstallationState(ctx context.Context, token InstallationToken, state InstallationState, details json.RawMessage) error
 
-	// UpdateInstallationState can be used to inform the connctd platform about the new state of an instance creation.
+	// UpdateInstanceState can be used to inform the connctd platform about the new state of an instance creation.
 	// It must be called if the instantiation requires multiple steps.
 	UpdateInstanceState(ctx context.Context, token InstantiationToken, state InstantiationState, details json.RawMessage) error
 
@@ -118,19 +118,19 @@ func NewClient(opts *ClientOptions, logger logr.Logger) (Client, error) {
 }
 
 // CreateThing implements interface definition.
-func (a *APIClient) CreateThing(ctx context.Context, token InstantiationToken, thing models.Thing) (result models.Thing, err error) {
+func (a *APIClient) CreateThing(ctx context.Context, token InstantiationToken, thing connctd.Thing) (result connctd.Thing, err error) {
 	message := AddThingRequest{
 		Thing: thing,
 	}
 
 	payload, err := json.Marshal(message)
 	if err != nil {
-		return models.Thing{}, fmt.Errorf("failed to marshal thing: %w", err)
+		return connctd.Thing{}, fmt.Errorf("failed to marshal thing: %w", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, a.baseURL.String()+connectorThingsEndpoint, bytes.NewBuffer(payload))
 	if err != nil {
-		return models.Thing{}, fmt.Errorf("failed to create new request: %w", err)
+		return connctd.Thing{}, fmt.Errorf("failed to create new request: %w", err)
 	}
 
 	// set headers
@@ -140,24 +140,24 @@ func (a *APIClient) CreateThing(ctx context.Context, token InstantiationToken, t
 	resp, err := a.httpClient.Do(req.WithContext(ctx))
 	if err != nil {
 		a.logger.Error(err, "Failed to create thing", "name", thing.Name)
-		return models.Thing{}, fmt.Errorf("failed to create thing: %w", err)
+		return connctd.Thing{}, fmt.Errorf("failed to create thing: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return models.Thing{}, fmt.Errorf("could not read response body: %w", err)
+		return connctd.Thing{}, fmt.Errorf("could not read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusCreated {
 		a.logger.Error(ErrorUnexpectedStatusCode, "Could not create thing", "expectedStatusCode", http.StatusCreated, "givenStatusCode", resp.StatusCode, "body", string(body))
-		return models.Thing{}, ErrorUnexpectedStatusCode
+		return connctd.Thing{}, ErrorUnexpectedStatusCode
 	}
 
 	var res AddThingResponse
 	if err := json.Unmarshal(body, &res); err != nil {
-		return models.Thing{}, ErrorUnexpectedResponse
+		return connctd.Thing{}, ErrorUnexpectedResponse
 	}
 
 	thing.ID = res.ID
@@ -175,7 +175,7 @@ func (a *APIClient) UpdateThingPropertyValue(ctx context.Context, token Instanti
 }
 
 // UpdateThingStatus implements interface definition.
-func (a *APIClient) UpdateThingStatus(ctx context.Context, token InstantiationToken, thingID string, status models.StatusType) error {
+func (a *APIClient) UpdateThingStatus(ctx context.Context, token InstantiationToken, thingID string, status connctd.StatusType) error {
 	message := UpdateThingStatusRequest{
 		Status: status,
 	}

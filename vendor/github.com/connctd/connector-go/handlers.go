@@ -5,11 +5,9 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"errors"
+	"github.com/connctd/connector-go/crypto"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/connctd/connector-go/api"
-	"github.com/connctd/connector-go/api/crypto"
 )
 
 type signatureValidationHandler struct {
@@ -48,12 +46,12 @@ func (h *signatureValidationHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		defer r.Body.Close()
 	}
 
-	// apply preprocess and pass values to signing function
+	// apply preprocessor and use values to create the canonical request representation
 	extractedValues := h.preProcessor(r)
-	expectedSignature, err := crypto.SignablePayload(r.Method, extractedValues.Scheme, extractedValues.Host, extractedValues.RequestURI, r.Header, body)
+	signaturePayload, err := crypto.SignablePayload(r.Method, extractedValues.Scheme, extractedValues.Host, extractedValues.RequestURI, r.Header, body)
 	if err != nil {
 		if errors.Is(err, crypto.ErrorMissingHeader) {
-			crypto.ErrorMissingHeader.Write(w)
+			ErrorMissingHeader.Write(w)
 			return
 		}
 
@@ -61,8 +59,8 @@ func (h *signatureValidationHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// lets check the signature manually
-	if ed25519.Verify(h.publicKey, expectedSignature, decodedSignature) {
+	// verify the signature
+	if crypto.Verify(h.publicKey, signaturePayload, decodedSignature) {
 		r.Body = ioutil.NopCloser(bytes.NewReader(body))
 		h.next.ServeHTTP(w, r)
 	} else {
@@ -132,7 +130,8 @@ type ValidationParameters struct {
 
 // Possible errors returned by NewSignatureValidationHandler:
 var (
-	ErrorBadSignature  = api.NewError("BAD_SIGNATURE", "Signature seems to be invalid", http.StatusBadRequest)
-	ErrorSigningFailed = api.NewError("SIGNING_FAILED", "Failed to sign the request", http.StatusBadRequest)
-	ErrorInvalidBody   = api.NewError("INVALID_BODY", "Unable to read message body", http.StatusBadRequest)
+	ErrorMissingHeader = NewError("MISSING_HEADER", "Signable payload can not be generated since a relevant header is missing", http.StatusBadRequest)
+	ErrorBadSignature  = NewError("BAD_SIGNATURE", "Signature seems to be invalid", http.StatusBadRequest)
+	ErrorSigningFailed = NewError("SIGNING_FAILED", "Failed to sign the request", http.StatusBadRequest)
+	ErrorInvalidBody   = NewError("INVALID_BODY", "Unable to read message body", http.StatusBadRequest)
 )

@@ -2,9 +2,8 @@ package connector
 
 import (
 	"encoding/json"
+	"github.com/connctd/connector-go/connctd"
 	"time"
-
-	"github.com/connctd/connector-go/models"
 )
 
 // Possible step types:
@@ -88,7 +87,7 @@ type Step struct {
 
 // AddThingRequest is used to create a new thing on the connctd platform.
 type AddThingRequest struct {
-	Thing models.Thing `json:"thing"`
+	Thing connctd.Thing `json:"thing"`
 }
 
 // AddThingResponse describes the response sent by connctd when thing creation was successful.
@@ -104,7 +103,7 @@ type UpdateThingPropertyValueRequest struct {
 
 // UpdateThingStatusRequest allows updating the status of a thing.
 type UpdateThingStatusRequest struct {
-	Status models.StatusType `json:"status"`
+	Status connctd.StatusType `json:"status"`
 }
 
 // ActionRequest is sent by connctd platform in order to trigger an action.
@@ -129,7 +128,6 @@ const (
 
 // ActionResponse can be sent in order to inform about the state of an action.
 type ActionResponse struct {
-	ID     string              `json:"id"`
 	Status ActionRequestStatus `json:"status"`
 	Error  string              `json:"error"`
 }

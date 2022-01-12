@@ -1,10 +1,9 @@
-# github.com/connctd/connector-go v0.0.0-20220111124524-4a5c887e9d41
+# github.com/connctd/connector-go v0.0.0-20220112120231-0eadcc1fb6a3
 ## explicit; go 1.14
 github.com/connctd/connector-go
-github.com/connctd/connector-go/api
-github.com/connctd/connector-go/api/crypto
+github.com/connctd/connector-go/connctd
+github.com/connctd/connector-go/crypto
 github.com/connctd/connector-go/db
-github.com/connctd/connector-go/models
 github.com/connctd/connector-go/provider
 github.com/connctd/connector-go/service
 # github.com/db-journey/migrate v2.0.0+incompatible

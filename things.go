@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/connctd/connector-go"
-	"github.com/connctd/connector-go/models"
+	"github.com/connctd/connector-go/connctd"
 )
 
 const (
@@ -21,16 +21,16 @@ const (
 // The thing will have to components.
 // randomComponent will periodically updated by a new random value.
 // searchComponent will only be updated when a search action is triggered.
-func thingTemplate(request connector.InstantiationRequest) []models.Thing {
-	return []models.Thing{
+func thingTemplate(request connector.InstantiationRequest) []connctd.Thing {
+	return []connctd.Thing{
 		{
 			Name:            "Giphy",
 			Manufacturer:    "IoT connctd GmbH",
 			DisplayType:     "core.SENSOR",
 			MainComponentID: RandomComponentId,
 			Status:          "AVAILABLE",
-			Attributes:      []models.ThingAttribute{},
-			Components: []models.Component{
+			Attributes:      []connctd.ThingAttribute{},
+			Components: []connctd.Component{
 				{
 					ID:            RandomComponentId,
 					Name:          "Giphy random component",
@@ -38,15 +38,15 @@ func thingTemplate(request connector.InstantiationRequest) []models.Thing {
 					Capabilities: []string{
 						"core.MEASURE",
 					},
-					Properties: []models.Property{
+					Properties: []connctd.Property{
 						{
 							ID:    RandomPropertyId,
 							Name:  "Giphy random property",
 							Value: "",
-							Type:  models.ValueTypeString,
+							Type:  connctd.ValueTypeString,
 						},
 					},
-					Actions: []models.Action{},
+					Actions: []connctd.Action{},
 				},
 				{
 					ID:            SearchComponentId,
@@ -55,21 +55,21 @@ func thingTemplate(request connector.InstantiationRequest) []models.Thing {
 					Capabilities: []string{
 						"core.SEARCH",
 					},
-					Properties: []models.Property{
+					Properties: []connctd.Property{
 						{
 							ID:   SearchPropertyId,
 							Name: "Giphy search property",
-							Type: models.ValueTypeString,
+							Type: connctd.ValueTypeString,
 						},
 					},
-					Actions: []models.Action{
+					Actions: []connctd.Action{
 						{
 							ID:   SearchActionId,
 							Name: "Giphy search action",
-							Parameters: []models.ActionParameter{
+							Parameters: []connctd.ActionParameter{
 								{
 									Name: SearchActionParameterId,
-									Type: models.ValueTypeString,
+									Type: connctd.ValueTypeString,
 								},
 							},
 						},

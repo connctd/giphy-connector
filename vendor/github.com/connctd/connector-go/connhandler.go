@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/connctd/connector-go/api"
 	"github.com/gorilla/mux"
 )
 
@@ -138,7 +137,7 @@ func RemoveInstallation(service ConnectorService) http.HandlerFunc {
 		id, ok := vars["id"]
 
 		if !ok {
-			writeError(w, api.ErrorMissingInstallationID)
+			writeError(w, ErrorMissingInstallationID)
 			return
 		}
 
@@ -208,7 +207,7 @@ func RemoveInstance(service ConnectorService) http.HandlerFunc {
 		id, ok := vars["id"]
 
 		if !ok {
-			writeError(w, api.ErrorMissingInstanceID)
+			writeError(w, ErrorMissingInstanceID)
 			return
 		}
 
@@ -272,16 +271,16 @@ func PerformAction(service ConnectorService) http.HandlerFunc {
 // helps to decode the request body
 func decodeJSONBody(w http.ResponseWriter, r *http.Request, dest interface{}) error {
 	if r.Header.Get("Content-Type") != "application/json" {
-		return api.ErrorBadContentType
+		return ErrorBadContentType
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return api.ErrorBadRequestBody
+		return ErrorBadRequestBody
 	}
 
 	if err = json.Unmarshal(body, dest); err != nil {
-		return api.ErrorInvalidJsonBody
+		return ErrorInvalidJsonBody
 	}
 
 	return nil
@@ -289,11 +288,11 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, dest interface{}) er
 
 // helps to encode an error
 func writeError(w http.ResponseWriter, err error) {
-	var e *api.Error
+	var e *Error
 	if errors.As(err, &e) {
 		e.Write(w)
 	} else {
-		api.NewError(
+		NewError(
 			"INTERNAL_SERVER_ERROR",
 			err.Error(),
 			http.StatusInternalServerError,
@@ -303,7 +302,7 @@ func writeError(w http.ResponseWriter, err error) {
 
 // helps to set the status according to an error
 func writeStatus(w http.ResponseWriter, err error) {
-	var e *api.Error
+	var e *Error
 	if errors.As(err, &e) {
 		w.WriteHeader(e.Status)
 	} else {

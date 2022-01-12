@@ -2,9 +2,9 @@ package crypto
 
 import (
 	"bytes"
+	"crypto/ed25519"
+	"errors"
 	"net/http"
-
-	"github.com/connctd/connector-go/api"
 )
 
 // SignedHeaderKey defines a header field name
@@ -80,7 +80,20 @@ func SignablePayload(method string, scheme string, host string, requestURI strin
 	return b.Bytes(), nil
 }
 
+// Verify reports whether signature is a valid signature of message by publicKey. It
+// will panic if len(publicKey) is not PublicKeySize
+func Verify(publicKey ed25519.PublicKey, message, signature []byte) bool {
+	return ed25519.Verify(publicKey, message, signature)
+}
+
+// Sign signs the message with privateKey and returns a signature. It will
+// panic if len(privateKey) is not PrivateKeySize
+func Sign(privateKey ed25519.PrivateKey, message []byte) []byte {
+	return ed25519.Sign(privateKey, message)
+}
+
 // Definition of error cases
 var (
-	ErrorMissingHeader = api.NewError("MISSING_HEADER", "Signable payload can not be generated since a relevant header is missing", http.StatusBadRequest)
+	// ErrorMissingHeader is returned when a header used in the canonical request representation is missing
+	ErrorMissingHeader = errors.New("signable payload can not be generated since a relevant header is missing")
 )
