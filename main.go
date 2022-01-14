@@ -73,12 +73,12 @@ func main() {
 	// Create a new HTTP handler using the service
 	httpHandler := connector.NewConnectorHandler(nil, service, publicKey)
 
-	connector.DefaultLogger.Info("start giphy provider")
 	// Start Giphy provider
-	giphyProvider.Run()
+	connector.DefaultLogger.Info("start giphy provider")
+	giphyProvider.Run(ctx)
 
-	connector.DefaultLogger.Info("start callback handler")
 	// Start the http server using our handler
+	connector.DefaultLogger.Info("start callback handler")
 	err = http.ListenAndServe(":8080", httpHandler)
 	if err != nil {
 		connector.DefaultLogger.Error(err, "failed to start handler")

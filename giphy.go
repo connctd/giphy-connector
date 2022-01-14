@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
@@ -31,38 +32,44 @@ func NewGiphyProvider() *GiphyProvider {
 }
 
 // Run starts the periodic update and the action handler.
-func (h *GiphyProvider) Run() {
-	go h.periodicUpdate()
+func (h *GiphyProvider) Run(ctx context.Context) {
+	go h.periodicUpdate(ctx)
 	go h.actionHandler()
 }
 
 // periodicUpdate starts an endless loop which will periodically update the random component of each instance
-func (h *GiphyProvider) periodicUpdate() {
+func (h *GiphyProvider) periodicUpdate(ctx context.Context) {
+	ticker := time.NewTicker(1 * time.Minute)
 	for {
-		h.Update()
+		select {
+		case <-ctx.Done():
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			h.Update()
 
-		for _, instance := range h.Instances {
-			if len(instance.ThingMapping) <= 0 {
-				logrus.WithField("instance", instance).Info("missing thing id")
-				continue
-			}
-			randomGif, err := h.getRandomGif(instance)
-			if err != nil {
-				continue
-			}
+			for _, instance := range h.Instances {
+				if len(instance.ThingMapping) <= 0 {
+					logrus.WithField("instance", instance).Info("missing thing id")
+					continue
+				}
+				randomGif, err := h.getRandomGif(instance)
+				if err != nil {
+					continue
+				}
 
-			update := connector.UpdateEvent{
-				PropertyUpdateEvent: &connector.PropertyUpdateEvent{
-					InstanceId:  instance.ID,
-					ThingId:     instance.ThingMapping[0].ThingID,
-					ComponentId: RandomComponentId,
-					PropertyId:  RandomPropertyId,
-					Value:       randomGif,
-				},
+				update := connector.UpdateEvent{
+					PropertyUpdateEvent: &connector.PropertyUpdateEvent{
+						InstanceId:  instance.ID,
+						ThingId:     instance.ThingMapping[0].ThingID,
+						ComponentId: RandomComponentId,
+						PropertyId:  RandomPropertyId,
+						Value:       randomGif,
+					},
+				}
+				h.UpdateEvent(update)
 			}
-			h.UpdateEvent(update)
 		}
-		time.Sleep(1 * time.Minute)
 	}
 }
 
