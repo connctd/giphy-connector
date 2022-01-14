@@ -36,7 +36,7 @@ func thingTemplate(request connector.InstantiationRequest) []connctd.Thing {
 					Name:          "Giphy random component",
 					ComponentType: "core.Sensor",
 					Capabilities: []string{
-						"core.MEASURE",
+						"core.RANDOMIZE",
 					},
 					Properties: []connctd.Property{
 						{
@@ -44,6 +44,7 @@ func thingTemplate(request connector.InstantiationRequest) []connctd.Thing {
 							Name:  "Giphy random property",
 							Value: "",
 							Type:  connctd.ValueTypeString,
+							PropertyType: "giphy.IMAGE_URL",
 						},
 					},
 					Actions: []connctd.Action{},
@@ -53,13 +54,14 @@ func thingTemplate(request connector.InstantiationRequest) []connctd.Thing {
 					Name:          "Giphy search",
 					ComponentType: "core.Sensor",
 					Capabilities: []string{
-						"core.SEARCH",
+						"giphy.SEARCH",
 					},
 					Properties: []connctd.Property{
 						{
 							ID:   SearchPropertyId,
 							Name: "Giphy search property",
 							Type: connctd.ValueTypeString,
+							PropertyType: "giphy.SEARCH_RESULT",
 						},
 					},
 					Actions: []connctd.Action{
