@@ -5,6 +5,7 @@ package connector
 
 import (
 	"context"
+
 	"github.com/connctd/connector-go/connctd"
 )
 
@@ -46,6 +47,7 @@ type ConnectorService interface {
 	PerformAction(ctx context.Context, request ActionRequest) (*ActionResponse, error)
 }
 
+// ThingTemplates is used by the default connector service to create a set of connctd.Thing for each new instantiation request.
 type ThingTemplates func(request InstantiationRequest) []connctd.Thing
 
 // Database interface is used in the default service to persist new installations, instances, configurations and external device mappings.
