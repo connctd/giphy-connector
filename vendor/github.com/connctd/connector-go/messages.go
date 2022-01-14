@@ -2,25 +2,21 @@ package connector
 
 import (
 	"encoding/json"
+	"github.com/connctd/connector-go/connctd"
 	"time"
-
-	"github.com/connctd/restapi-go"
 )
 
-// definition of generic constants
+// Possible step types:
 const (
 	StepText     StepType = 1
 	StepMarkdown StepType = 2
 	StepRedirect StepType = 3
 )
 
-// InstallationToken can be used by a connector installation to propagte e.g. state changes
-type InstallationToken string
-
-// InstallationState reflects the current state of an installation
+// InstallationState reflects the current state of an installation.
 type InstallationState int
 
-// definition of installation related constants
+// Valid installations states:
 const (
 	InstallationStateInitialized InstallationState = 1
 	InstallationStateComplete    InstallationState = 2
@@ -28,7 +24,7 @@ const (
 	InstallationStateFailed      InstallationState = 4
 )
 
-// InstallationRequest sent by connctd in order to signalise a new installation
+// InstallationRequest sent by connctd in order to signalise a new installation.
 type InstallationRequest struct {
 	ID            string            `json:"id"`
 	Token         InstallationToken `json:"token"`
@@ -36,25 +32,22 @@ type InstallationRequest struct {
 	Configuration []Configuration   `json:"configuration"`
 }
 
-// InstallationStateUpdateRequest can be sent by a connector to indicate new state
+// InstallationStateUpdateRequest can be sent by a connector to indicate new state.
 type InstallationStateUpdateRequest struct {
 	State   InstallationState `json:"state"`
 	Details json.RawMessage   `json:"details,omitempty"`
 }
 
-// InstallationResponse defines the struct of a potential response
+// InstallationResponse defines the optional response to an installation request.
 type InstallationResponse struct {
 	Details     json.RawMessage `json:"details,omitempty"`
 	FurtherStep Step            `json:"furtherStep,omitempty"`
 }
 
-// InstantiationToken can be used by a connector instance to send things or updates
-type InstantiationToken string
-
-// InstantiationState reflects the current state of an instantiation
+// InstantiationState reflects the current state of an instantiation.
 type InstantiationState int
 
-// definition of instantiation states
+// Valid instantiations states:
 const (
 	InstantiationStateInitialized InstantiationState = 1
 	InstantiationStateComplete    InstantiationState = 2
@@ -62,7 +55,7 @@ const (
 	InstantiationStateFailed      InstantiationState = 4
 )
 
-// InstantiationRequest sent by connctd in order to signalise a new instantiation
+// InstantiationRequest sent by connctd in order to signalise a new instantiation.
 type InstantiationRequest struct {
 	ID             string             `json:"id"`
 	InstallationID string             `json:"installation_id"`
@@ -71,19 +64,19 @@ type InstantiationRequest struct {
 	Configuration  []Configuration    `json:"configuration"`
 }
 
-// InstantiationResponse defines the struct of a potential response
+// InstantiationResponse defines the optional response to an instantiation request.
 type InstantiationResponse struct {
 	Details     json.RawMessage `json:"details,omitempty"`
 	FurtherStep Step            `json:"furtherStep,omitempty"`
 }
 
-// InstanceStateUpdateRequest can be sent by a connector to indicate a new state
+// InstanceStateUpdateRequest can be sent by a connector to indicate a new state.
 type InstanceStateUpdateRequest struct {
 	State   InstantiationState `json:"state"`
 	Details json.RawMessage    `json:"details,omitempty"`
 }
 
-// StepType defines the type of a further installation or instantiation step
+// StepType defines the type of a further installation or instantiation step.
 type StepType int
 
 // Step defines a further installation or instantiation step
@@ -92,52 +85,55 @@ type Step struct {
 	Content string   `json:"content"`
 }
 
-// Configuration is key value pair
-type Configuration struct {
-	ID    string `json:"id"`
-	Value string `json:"value"`
-}
-
-// AddThingRequest is used to create a new thing on connctd platform
+// AddThingRequest is used to create a new thing on the connctd platform.
 type AddThingRequest struct {
-	Thing restapi.Thing `json:"thing"`
+	Thing connctd.Thing `json:"thing"`
 }
 
-// AddThingResponse describes the response sent when thing creation was successful
+// AddThingResponse describes the response sent by connctd when thing creation was successful.
 type AddThingResponse struct {
 	ID string `json:"id"`
 }
 
-// UpdateThingPropertyValueRequest can be used to propagate a new property value
+// UpdateThingPropertyValueRequest can be used to propagate a new property value.
 type UpdateThingPropertyValueRequest struct {
 	Value      string    `json:"value"`
 	LastUpdate time.Time `json:"lastUpdate"`
 }
 
-// UpdateThingStatus allows updating status of a thing
+// UpdateThingStatusRequest allows updating the status of a thing.
 type UpdateThingStatusRequest struct {
-	Status restapi.StatusType `json:"status"`
+	Status connctd.StatusType `json:"status"`
 }
 
-// ActionRequest is sent by connctd platform in order to trigger an action
+// ActionRequest is sent by connctd platform in order to trigger an action.
 type ActionRequest struct {
-	ID          string                      `json:"id"`
-	ThingID     string                      `json:"thingId"`
-	ComponentID string                      `json:"componentId"`
-	ActionID    string                      `json:"actionId"`
-	Status      restapi.ActionRequestStatus `json:"status"`
-	Parameters  map[string]string           `json:"parameters"`
+	ID          string              `json:"id"`
+	ThingID     string              `json:"thingId"`
+	ComponentID string              `json:"componentId"`
+	ActionID    string              `json:"actionId"`
+	Status      ActionRequestStatus `json:"status"`
+	Parameters  map[string]string   `json:"parameters"`
 }
 
-// ActionResponse can be sent in order to inform about the state of an action
+// ActionRequestStatus indicates the status of an action request.
+type ActionRequestStatus string
+
+const (
+	ActionRequestStatusPending   ActionRequestStatus = "PENDING"
+	ActionRequestStatusCompleted ActionRequestStatus = "COMPLETED"
+	ActionRequestStatusFailed    ActionRequestStatus = "FAILED"
+	ActionRequestStatusCanceled  ActionRequestStatus = "CANCELED"
+)
+
+// ActionResponse can be sent in order to inform about the state of an action.
 type ActionResponse struct {
-	ID     string                      `json:"id"`
-	Status restapi.ActionRequestStatus `json:"status"`
-	Error  string                      `json:"error"`
+	Status ActionRequestStatus `json:"status"`
+	Error  string              `json:"error"`
 }
 
-// ActionRequestStatusUpdate allows a connector to update the status of an action
+// ActionRequestStatusUpdate allows a connector to update the status of an action.
 type ActionRequestStatusUpdate struct {
-	Status restapi.ActionRequestStatus `json:"status"`
-	Error  string                      `json:"error"`
+	Status ActionRequestStatus `json:"status"`
+	Error  string              `json:"error"`
 }

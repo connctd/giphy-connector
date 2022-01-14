@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/connctd/connector-go/connctd"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -17,13 +18,12 @@ import (
 
 	"path"
 
-	"github.com/connctd/restapi-go"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/stdr"
 )
 
 const (
-	// APIBaseURL defines how to reach connctd api
+	// APIBaseURL defines how to reach connctd API.
 	APIBaseURL = "https://connectors.connctd.io/api/v1/"
 
 	connectorThingsEndpoint            = "connectorhub/callback/instances/things"
@@ -32,7 +32,7 @@ const (
 	connectorInstallationStateEndpoint = "connectorhub/callback/installations/state"
 )
 
-// DefaultOptions returns default client options
+// DefaultOptions returns default client options.
 func DefaultOptions() *ClientOptions {
 	url, _ := url.Parse(APIBaseURL)
 
@@ -42,39 +42,55 @@ func DefaultOptions() *ClientOptions {
 	}
 }
 
-// DefaultLogger uses go standard logging capabilities
+// DefaultLogger uses go standard logging capabilities.
 var DefaultLogger = stdr.New(stdlog.New(os.Stderr, "", stdlog.LstdFlags|stdlog.Lshortfile))
 
-// Client defines api client functionalities
+// Client interface defines API client functionalities for the connctd platform.
+// For more details about API see https://docs.connctd.io/connector/connector_protocol/#connctd-api.
 type Client interface {
-	// CreateThing can be used to create a thing. A thingID is returned if
-	// operation was successul. Otherwise an error is thrown.
-	CreateThing(ctx context.Context, token InstantiationToken, thing restapi.Thing) (result restapi.Thing, err error)
-	UpdateThingPropertyValue(ctx context.Context, token InstantiationToken, thingID string, componentID string, propertyID string, value string, lastUpdate time.Time) error
-	UpdateThingStatus(ctx context.Context, token InstantiationToken, thingID string, status restapi.StatusType) error
+	// CreateThing can be used to create a thing.
+	// The ID of the newly created thing is returned if the operation was successful.
+	// Otherwise an error is returned.
+	CreateThing(ctx context.Context, token InstantiationToken, thing connctd.Thing) (result connctd.Thing, err error)
 
-	// UpdateActionStatus can be used to inform about the new state of an action. Optional err can be set for additional error details
-	UpdateActionStatus(ctx context.Context, token InstantiationToken, actionRequestID string, status restapi.ActionRequestStatus, err string) error
+	// It returns an error if the update was not successful.
+	UpdateThingPropertyValue(ctx context.Context, token InstantiationToken, thingID string, componentID string, propertyID string, value string, lastUpdate time.Time) error
+
+	// UpdateThingStatus updated the status of a thing.
+	// It can be used to set the availability of a thing.
+	UpdateThingStatus(ctx context.Context, token InstantiationToken, thingID string, status connctd.StatusType) error
+
+	// UpdateActionStatus can be used to inform the connctd platform about the new state of an action request.
+	// It must be used to finish pending action request.
+	// If the action request was not successful, an optional error can be set for additional error details.
+	UpdateActionStatus(ctx context.Context, token InstantiationToken, actionRequestID string, status ActionRequestStatus, err string) error
+
+	// UpdateInstallationState can be used to inform the connctd platform about the new state of an installation.
+	// It must be called if the installation requires multiple steps, after it is finished.
 	UpdateInstallationState(ctx context.Context, token InstallationToken, state InstallationState, details json.RawMessage) error
+
+	// UpdateInstanceState can be used to inform the connctd platform about the new state of an instance creation.
+	// It must be called if the instantiation requires multiple steps.
 	UpdateInstanceState(ctx context.Context, token InstantiationToken, state InstantiationState, details json.RawMessage) error
 
+	// DeleteThing can be used to delete a thing.
 	DeleteThing(ctx context.Context, token InstantiationToken, thingID string) error
 }
 
-// ClientOptions allow modification of api client behaviour
+// ClientOptions allow modification of API client behaviour.
 type ClientOptions struct {
 	ConnctdBaseURL *url.URL
 	HTTPClient     *http.Client
 }
 
-// APIClient implements Client interface
+// APIClient implements Client interface.
 type APIClient struct {
 	httpClient *http.Client
 	baseURL    url.URL
 	logger     logr.Logger
 }
 
-// NewClient creates a new api client
+// NewClient creates a new API client.
 func NewClient(opts *ClientOptions, logger logr.Logger) (Client, error) {
 	httpClient := http.DefaultClient
 	url, _ := url.Parse(APIBaseURL)
@@ -101,20 +117,20 @@ func NewClient(opts *ClientOptions, logger logr.Logger) (Client, error) {
 	return &APIClient{httpClient: httpClient, baseURL: *url, logger: logger.WithName("connector-go-client")}, nil
 }
 
-// CreateThing implements interface definition
-func (a *APIClient) CreateThing(ctx context.Context, token InstantiationToken, thing restapi.Thing) (result restapi.Thing, err error) {
+// CreateThing implements interface definition.
+func (a *APIClient) CreateThing(ctx context.Context, token InstantiationToken, thing connctd.Thing) (result connctd.Thing, err error) {
 	message := AddThingRequest{
 		Thing: thing,
 	}
 
 	payload, err := json.Marshal(message)
 	if err != nil {
-		return restapi.Thing{}, fmt.Errorf("failed to marshal thing: %w", err)
+		return connctd.Thing{}, fmt.Errorf("failed to marshal thing: %w", err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, a.baseURL.String()+connectorThingsEndpoint, bytes.NewBuffer(payload))
 	if err != nil {
-		return restapi.Thing{}, fmt.Errorf("failed to create new request: %w", err)
+		return connctd.Thing{}, fmt.Errorf("failed to create new request: %w", err)
 	}
 
 	// set headers
@@ -124,31 +140,31 @@ func (a *APIClient) CreateThing(ctx context.Context, token InstantiationToken, t
 	resp, err := a.httpClient.Do(req.WithContext(ctx))
 	if err != nil {
 		a.logger.Error(err, "Failed to create thing", "name", thing.Name)
-		return restapi.Thing{}, fmt.Errorf("failed to create thing: %w", err)
+		return connctd.Thing{}, fmt.Errorf("failed to create thing: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return restapi.Thing{}, fmt.Errorf("could not read response body: %w", err)
+		return connctd.Thing{}, fmt.Errorf("could not read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusCreated {
 		a.logger.Error(ErrorUnexpectedStatusCode, "Could not create thing", "expectedStatusCode", http.StatusCreated, "givenStatusCode", resp.StatusCode, "body", string(body))
-		return restapi.Thing{}, ErrorUnexpectedStatusCode
+		return connctd.Thing{}, ErrorUnexpectedStatusCode
 	}
 
 	var res AddThingResponse
 	if err := json.Unmarshal(body, &res); err != nil {
-		return restapi.Thing{}, ErrorUnexpectedResponse
+		return connctd.Thing{}, ErrorUnexpectedResponse
 	}
 
 	thing.ID = res.ID
 	return thing, nil
 }
 
-// UpdateThingPropertyValue implements interface definition
+// UpdateThingPropertyValue implements interface definition.
 func (a *APIClient) UpdateThingPropertyValue(ctx context.Context, token InstantiationToken, thingID string, componentID string, propertyID string, value string, lastUpdate time.Time) error {
 	message := UpdateThingPropertyValueRequest{
 		Value:      value,
@@ -158,8 +174,8 @@ func (a *APIClient) UpdateThingPropertyValue(ctx context.Context, token Instanti
 	return a.doRequest(ctx, http.MethodPut, path.Join(connectorThingsEndpoint, thingID, "components", componentID, "properties", propertyID), string(token), message, http.StatusNoContent)
 }
 
-// UpdateThingPropertyValue implements interface definition
-func (a *APIClient) UpdateThingStatus(ctx context.Context, token InstantiationToken, thingID string, status restapi.StatusType) error {
+// UpdateThingStatus implements interface definition.
+func (a *APIClient) UpdateThingStatus(ctx context.Context, token InstantiationToken, thingID string, status connctd.StatusType) error {
 	message := UpdateThingStatusRequest{
 		Status: status,
 	}
@@ -167,8 +183,8 @@ func (a *APIClient) UpdateThingStatus(ctx context.Context, token InstantiationTo
 	return a.doRequest(ctx, http.MethodPut, path.Join(connectorThingsEndpoint, thingID, "status"), string(token), message, http.StatusNoContent)
 }
 
-// UpdateActionStatus implements interface definition
-func (a *APIClient) UpdateActionStatus(ctx context.Context, token InstantiationToken, actionRequestID string, status restapi.ActionRequestStatus, e string) error {
+// UpdateActionStatus implements interface definition.
+func (a *APIClient) UpdateActionStatus(ctx context.Context, token InstantiationToken, actionRequestID string, status ActionRequestStatus, e string) error {
 	message := ActionRequestStatusUpdate{
 		Status: status,
 		Error:  e,
@@ -177,7 +193,7 @@ func (a *APIClient) UpdateActionStatus(ctx context.Context, token InstantiationT
 	return a.doRequest(ctx, http.MethodPut, path.Join(connectorActionsEndpoint, actionRequestID), string(token), message, http.StatusNoContent)
 }
 
-// UpdateInstallationState implements interface definition
+// UpdateInstallationState implements interface definition.
 func (a *APIClient) UpdateInstallationState(ctx context.Context, token InstallationToken, state InstallationState, details json.RawMessage) error {
 	message := InstallationStateUpdateRequest{
 		State:   state,
@@ -187,7 +203,7 @@ func (a *APIClient) UpdateInstallationState(ctx context.Context, token Installat
 	return a.doRequest(ctx, http.MethodPost, connectorInstallationStateEndpoint, string(token), message, http.StatusNoContent)
 }
 
-// UpdateThingPropertyValue implements interface definition
+// UpdateInstanceState implements interface definition.
 func (a *APIClient) UpdateInstanceState(ctx context.Context, token InstantiationToken, state InstantiationState, details json.RawMessage) error {
 	message := InstanceStateUpdateRequest{
 		State:   state,
@@ -197,7 +213,7 @@ func (a *APIClient) UpdateInstanceState(ctx context.Context, token Instantiation
 	return a.doRequest(ctx, http.MethodPost, connectorInstanceStateEndpoint, string(token), message, http.StatusNoContent)
 }
 
-// UpdateThingPropertyValue implements interface definition
+// DeleteThing implements interface definition.
 func (a *APIClient) DeleteThing(ctx context.Context, token InstantiationToken, thingID string) error {
 	return a.doRequest(ctx, http.MethodDelete, path.Join(connectorThingsEndpoint, thingID), string(token), nil, http.StatusNoContent)
 }
@@ -256,7 +272,7 @@ func (a *APIClient) doRequest(ctx context.Context, method string, endpoint strin
 	return nil
 }
 
-// some error defintions
+// The following errors can be returned by the API client:
 var (
 	ErrorInvalidBaseURL       = errors.New("the base url needs to end with a slash")
 	ErrorMissingLogger        = errors.New("a logger needs to be passed")

@@ -5,11 +5,9 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"errors"
+	"github.com/connctd/connector-go/crypto"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/connctd/api-go"
-	"github.com/connctd/api-go/crypto"
 )
 
 type signatureValidationHandler struct {
@@ -18,9 +16,9 @@ type signatureValidationHandler struct {
 	publicKey    ed25519.PublicKey
 }
 
-// NewSignatureValidationHandler creates a new handler capable of verifying the signature header
-// Validation can be influenced by passing a ValidationPreProcessor. Quite common
-// functionalities are offered by DefaultValidationPreProcessor and ProxiedRequestValidationPreProcessor
+// NewSignatureValidationHandler creates a new handler capable of verifying the signature header.
+// Validation can be influenced by passing a ValidationPreProcessor.
+// Common functionalities are offered by DefaultValidationPreProcessor and ProxiedRequestValidationPreProcessor
 func NewSignatureValidationHandler(validationPreProcessor ValidationPreProcessor, publicKey ed25519.PublicKey, next http.HandlerFunc) http.Handler {
 	return &signatureValidationHandler{preProcessor: validationPreProcessor, publicKey: publicKey, next: next}
 }
@@ -48,12 +46,12 @@ func (h *signatureValidationHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		defer r.Body.Close()
 	}
 
-	// apply preprocess and pass values to signing function
+	// apply preprocessor and use values to create the canonical request representation
 	extractedValues := h.preProcessor(r)
-	expectedSignature, err := crypto.SignablePayload(r.Method, extractedValues.Scheme, extractedValues.Host, extractedValues.RequestURI, r.Header, body)
+	signaturePayload, err := crypto.SignablePayload(r.Method, extractedValues.Scheme, extractedValues.Host, extractedValues.RequestURI, r.Header, body)
 	if err != nil {
 		if errors.Is(err, crypto.ErrorMissingHeader) {
-			crypto.ErrorMissingHeader.Write(w)
+			ErrorMissingHeader.Write(w)
 			return
 		}
 
@@ -61,8 +59,8 @@ func (h *signatureValidationHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// lets check the signature manually
-	if ed25519.Verify(h.publicKey, expectedSignature, decodedSignature) {
+	// verify the signature
+	if crypto.Verify(h.publicKey, signaturePayload, decodedSignature) {
 		r.Body = ioutil.NopCloser(bytes.NewReader(body))
 		h.next.ServeHTTP(w, r)
 	} else {
@@ -71,14 +69,12 @@ func (h *signatureValidationHandler) ServeHTTP(w http.ResponseWriter, r *http.Re
 	}
 }
 
-// ValidationPreProcessor can be used to influence the signature validation algorithm
-// by returning a modified url struct. This becomes handy if your service is sitting behind
-// a proxy that modifies the original request headers which normally would lead to a
-// validation error
+// ValidationPreProcessor can be used to influence the signature validation algorithm by returning a modified url struct.
+// This becomes handy if your service is sitting behind a proxy that modifies the original request headers which normally would lead to a validation error.
 type ValidationPreProcessor func(r *http.Request) ValidationParameters
 
-// DefaultValidationPreProcessor extracts all relevant values from request fields
-// Use this processor if there are no proxies between connctd platform and your connector
+// DefaultValidationPreProcessor extracts all relevant values from request fields.
+// Use this processor if there are no proxies between connctd platform and your connector.
 func DefaultValidationPreProcessor() ValidationPreProcessor {
 	return func(r *http.Request) ValidationParameters {
 		// on server side scheme is not populated: https://github.com/golang/go/issues/28940
@@ -91,29 +87,51 @@ func DefaultValidationPreProcessor() ValidationPreProcessor {
 	}
 }
 
-// ProxiedRequestValidationPreProcessor allows passing modified headers to validate signature
-// function. This is necessary in case received request headers do not match up with
-// sent request headers because of e.g. proxies in between
-func ProxiedRequestValidationPreProcessor(scheme string, host string, endpoint string) ValidationPreProcessor {
+// ProxiedRequestValidationPreProcessor allows passing modified headers to the validate signature function.
+// This is necessary when received request headers do not match up with sent request headers because of e.g. proxies in between.
+func ProxiedRequestValidationPreProcessor(scheme string, host string) ValidationPreProcessor {
 	return func(r *http.Request) ValidationParameters {
 		return ValidationParameters{
 			Scheme:     scheme,
 			Host:       host,
-			RequestURI: endpoint,
+			RequestURI: r.URL.RequestURI(),
 		}
 	}
 }
 
-// ValidationParameters reflects list of parameters that are relevant for request signature validation
+// AutoProxyRequestValidationPreProcessor is used to set the signature validation parameters to header values provided by a reverse proxy.
+// Your proxy must set the header X-Forwarded-Proto to the original protocol used by the client and X-Forwarded-Host to the original host requested by the client.
+func AutoProxyRequestValidationPreProcessor() ValidationPreProcessor {
+	return func(r *http.Request) ValidationParameters {
+		scheme := r.Header.Get("X-Forwarded-Proto")
+		if scheme == "" {
+			scheme = "https"
+		}
+
+		host := r.Header.Get("X-Forwarded-Host")
+		if host == "" {
+			host = r.Host
+		}
+
+		return ValidationParameters{
+			Scheme:     scheme,
+			Host:       host,
+			RequestURI: r.URL.RequestURI(),
+		}
+	}
+}
+
+// ValidationParameters reflects a list of parameters that are relevant for request signature validation.
 type ValidationParameters struct {
 	Scheme     string
 	Host       string
 	RequestURI string
 }
 
-// some error definitions
+// Possible errors returned by NewSignatureValidationHandler:
 var (
-	ErrorBadSignature  = api.NewError("BAD_SIGNATURE", "Signature seems to be invalid", http.StatusBadRequest)
-	ErrorSigningFailed = api.NewError("SIGNING_FAILED", "Failed to sign the request", http.StatusBadRequest)
-	ErrorInvalidBody   = api.NewError("INVALID_BODY", "Unable to read message body", http.StatusBadRequest)
+	ErrorMissingHeader = NewError("MISSING_HEADER", "Signable payload can not be generated since a relevant header is missing", http.StatusBadRequest)
+	ErrorBadSignature  = NewError("BAD_SIGNATURE", "Signature seems to be invalid", http.StatusBadRequest)
+	ErrorSigningFailed = NewError("SIGNING_FAILED", "Failed to sign the request", http.StatusBadRequest)
+	ErrorInvalidBody   = NewError("INVALID_BODY", "Unable to read message body", http.StatusBadRequest)
 )

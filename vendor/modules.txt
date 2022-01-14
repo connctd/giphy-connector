@@ -1,13 +1,16 @@
-# github.com/connctd/api-go v0.0.1
-## explicit; go 1.14
-github.com/connctd/api-go
-github.com/connctd/api-go/crypto
-# github.com/connctd/connector-go v0.0.0-20210826081925-40807b693708
+# github.com/connctd/connector-go v0.0.0-20220112120231-0eadcc1fb6a3
 ## explicit; go 1.14
 github.com/connctd/connector-go
-# github.com/connctd/restapi-go v0.0.3-0.20210621141557-c927ea01e1f2
-## explicit; go 1.14
-github.com/connctd/restapi-go
+github.com/connctd/connector-go/connctd
+github.com/connctd/connector-go/crypto
+github.com/connctd/connector-go/db
+github.com/connctd/connector-go/provider
+github.com/connctd/connector-go/service
+# github.com/db-journey/migrate v2.0.0+incompatible
+## explicit
+github.com/db-journey/migrate/direction
+github.com/db-journey/migrate/driver
+github.com/db-journey/migrate/file
 # github.com/db-journey/migrate/v2 v2.0.4
 ## explicit; go 1.13
 github.com/db-journey/migrate/v2/direction
@@ -16,6 +19,9 @@ github.com/db-journey/migrate/v2/file
 # github.com/db-journey/mysql-driver v1.0.1
 ## explicit; go 1.13
 github.com/db-journey/mysql-driver
+# github.com/db-journey/postgresql-driver v0.0.0-20190914135041-b502d4210454
+## explicit; go 1.13
+github.com/db-journey/postgresql-driver
 # github.com/go-logr/logr v0.3.0
 ## explicit; go 1.14
 github.com/go-logr/logr
@@ -32,6 +38,14 @@ github.com/gorilla/mux
 ## explicit; go 1.10
 github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
+# github.com/lib/pq v1.2.0
+## explicit
+github.com/lib/pq
+github.com/lib/pq/oid
+github.com/lib/pq/scram
+# github.com/mattn/go-sqlite3 v1.14.6
+## explicit; go 1.12
+github.com/mattn/go-sqlite3
 # github.com/peterhellberg/giphy v0.0.0-20171214132724-091ba7d7516d
 ## explicit
 github.com/peterhellberg/giphy
