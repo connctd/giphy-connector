@@ -100,7 +100,7 @@ Therefore we also define the action in the second component.
 
 In general things should be created for every new instance, because instances represent the end user of a connector.
 The default service can create things for us whenever a new instance is created when we provide a `ThingTemplates` callback to it.
-The function is called whenever a new instance is created and the service will register all things returned by the function.
+The function is called whenever a new instance is created and the service will register all things returned by the function. Note that things of course can also be created at a later point of time of the instance lifecylce.
 
 ```golang
 type ThingTemplates func(request InstantiationRequest) []restapi.Thing
@@ -176,10 +176,10 @@ In our case, we don't use anything from the provided instantiation requests, but
 Now lets implement the provider with both features.
 We start by defining a new struct containing the default provider.
 Note that the new struct implements the provider interface by embedding the default provider.
-To communicate with the Giphy API we will also import and use a [API client](https://github.com/peterhellberg/giphy).
+To communicate with the Giphy API we will also import and use an [API client](https://github.com/peterhellberg/giphy).
 For the periodic update we will periodically iterate over all instances, call the Giphy API to receive a new random gif and publish a update event on our event channel.
 The default provider implements two additional methods which we use here.
-The Update() method will add all newly registered installations and instances to our provider (and remove old ones) and the UpdateEvent() method will push an event to the underlying event channel.
+The `Update()` method will add all newly registered installations and instances to our provider (and remove old ones) and the `UpdateEvent()` method will push an event to the underlying event channel.
 Since the default service is listening to the event channel and handle the property update, this is all we have to implement for this feature.
 Note that the `ThingMapping` is automatically created for us by the default service when new instances are created.
 Also we set a API key of the Giphy client for every installations.
@@ -301,9 +301,9 @@ Since both methods should run for the whole runtime of the connector, we also im
 Now it's time to stich everything together and run the connector.
 In our main method, we will instantiate the provider, the default service and database and the connector handler for the HTTP endpoints.
 Last we run the event handler, the action handler and periodic update and serve the HTTP handler.
-Note that the HTTP handler also requires a public key to authenticate alle requests from the connctd platform.
+Note that the HTTP handler also requires a public key to authenticate all requests from the connctd platform.
 We will receive the key when we publish the connector at the platform.
-Also, we need a database for to save all new installations and instances.
+Also, we need a database to save all new installations and instances.
 This example will use a Sqlite database which doesn't need any setup.
 See the full code on how to migrate the database and how to use a different database.
 
@@ -353,7 +353,7 @@ instanceCallbackUrl: https://-ngrokId-.ngrok.io/instantiations
 
 actionCallbackUrl: https://-ngrokId-.ngrok.io/actions
 
-In step 3, provide add a new entry to the installation configuration with the ID ***giphy_api_key***, a value type of ***STRING(Text)*** and required set to true.
+In step 3, add a new entry to the installation configuration with the ID ***giphy_api_key***, a value type of ***STRING(Text)*** and required set to true.
 This instructs the connctd platform to ask for a configuration parameter for every installation and the parameters will be send to the connector with the installation request.
 The default service will automatically save all configuration parameters and provide them as part of the registration.
 
@@ -366,9 +366,9 @@ You can now install the connector.
 Select your app in the Developer Center sidebar then go to the Connector Store and click "Install from Connector Store".
 You should see the connector listed under your private connectors.
 Click on it and click the install button.
-The installation should ask you for the API key and succeed if you provide one.
+The installation should ask you for the API key and succeed if you provide one. You have now successfully installed the giphy connector for your app which means on your connector side a installation should have been added. You can now create connector instances for every of your endcustomers using your app.
 
-Creating an instance is not possible with the Developer Center, since it is usually done programmatically by the App using a connector.
+Creating an instance is not possible from within the Developer Center, since it is usually done programmatically by the App using a connector.
 We can however use the connctd GraphQL API to create an instance manually.
 For this you need the installation ID, which you can find in the [Developer Center](https://devcenter.connctd.io/connectors).
 Click on your installation and the ID is shown.
