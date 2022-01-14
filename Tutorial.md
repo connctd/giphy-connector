@@ -103,7 +103,7 @@ The default service can create things for us whenever a new instance is created 
 The function is called whenever a new instance is created and the service will register all things returned by the function. Note that things of course can also be created at a later point of time of the instance lifecylce.
 
 ```golang
-type ThingTemplates func(request InstantiationRequest) []restapi.Thing
+type ThingTemplates func(request InstantiationRequest) []connctd.Thing
 
 func thingTemplate(request connector.InstantiationRequest) []restapi.Thing {
 	return []restapi.Thing{
@@ -192,27 +192,40 @@ type GiphyProvider struct {
 }
 
 // periodicUpdate starts an endless loop which will periodically update the random component of each instance
-func (h *GiphyProvider) periodicUpdate() {
+func (h *GiphyProvider) periodicUpdate(ctx context.Context) {
+	ticker := time.NewTicker(1 * time.Minute)
 	for {
-		h.Update()
+		select {
+		case <-ctx.Done():
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			h.Update()
 
-		for _, instance := range h.Instances {
-			randomGif, err := h.getRandomGif(instance)
-			update := connector.UpdateEvent{
-				PropertyUpdateEvent: &connector.PropertyUpdateEvent{
-					InstanceId:  instance.ID,
-					ThingId:     instance.ThingMapping[0].ThingID,
-					ComponentId: RandomComponentId,
-					PropertyId:  RandomPropertyId,
-					Value:       randomGif,
-				},
+			for _, instance := range h.Instances {
+				if len(instance.ThingMapping) <= 0 {
+					logrus.WithField("instance", instance).Info("missing thing id")
+					continue
+				}
+				randomGif, err := h.getRandomGif(instance)
+				if err != nil {
+					continue
+				}
+
+				update := connector.UpdateEvent{
+					PropertyUpdateEvent: &connector.PropertyUpdateEvent{
+						InstanceId:  instance.ID,
+						ThingId:     instance.ThingMapping[0].ThingID,
+						ComponentId: RandomComponentId,
+						PropertyId:  RandomPropertyId,
+						Value:       randomGif,
+					},
+				}
+				h.UpdateEvent(update)
 			}
-			h.UpdateEvent(update)
 		}
-		time.Sleep(TIME_BETWEEN_UPDATES)
 	}
 }
-
 
 // getRandomGif uses the Giphy API to return a new random gif.
 func (h *GiphyProvider) getRandomGif(instance *connector.Instance) (string, error) {
@@ -238,6 +251,7 @@ If the service receives an event containing both event types it will handle the 
 Otherwise it will update the action state to failed.
 
 ```golang
+// actionHandler will listen for and execute action requests
 func (h *GiphyProvider) actionHandler() {
 	for pendingAction := range h.ActionChannel() {
 		update := connector.UpdateEvent{
@@ -255,7 +269,7 @@ func (h *GiphyProvider) actionHandler() {
 
 			if err != nil {
 				update.ActionEvent.Response = &connector.ActionResponse{
-					Status: restapi.ActionRequestStatusFailed,
+					Status: connector.ActionRequestStatusFailed,
 					Error:  err.Error(),
 				}
 				h.UpdateEvent(update)
@@ -263,7 +277,7 @@ func (h *GiphyProvider) actionHandler() {
 			}
 
 			update.ActionEvent.Response = &connector.ActionResponse{
-				Status: restapi.ActionRequestStatusCompleted,
+				Status: connector.ActionRequestStatusCompleted,
 			}
 			update.PropertyUpdateEvent = &connector.PropertyUpdateEvent{
 				ThingId:     pendingAction.Instance.ThingMapping[0].ThingID,
@@ -273,6 +287,14 @@ func (h *GiphyProvider) actionHandler() {
 				Value:       result,
 			}
 			h.UpdateEvent(update)
+
+		default:
+			update.ActionEvent.Response = &connector.ActionResponse{
+				Status: connector.ActionRequestStatusFailed,
+				Error:  "Action not supported",
+			}
+			h.UpdateEvent(update)
+		}
 	}
 }
 
@@ -282,12 +304,6 @@ func (h *GiphyProvider) getSearchResult(instance *connector.Instance, keyword st
 
 	h.giphyClient.Limit = 1
 	result, err := h.giphyClient.Search([]string{keyword})
-	if err != nil {
-		return "", err
-	}
-	if len(result.Data) <= 0 {
-		return "", errors.New("no search result found")
-	}
 
 	return result.Data[0].URL, nil
 }
@@ -321,14 +337,14 @@ func main() {
 	// Create a new instance of our connector
 	service, err := service.NewConnectorService(dbClient, connctdClient, giphyProvider, thingTemplate, connector.DefaultLogger)
 
-	// Create a new HTTP handler using the service
-	httpHandler := connector.NewConnectorHandler(nil, service, publicKey)
-
 	// Start the event handler listening to action and property update events
 	service.EventHandler(ctx)
 
+	// Create a new HTTP handler using the service
+	httpHandler := connector.NewConnectorHandler(nil, service, publicKey)
+
 	// Start Giphy provider
-	giphyProvider.Run()
+	giphyProvider.Run(ctx)
 
 	// Start the http server using our handler
 	http.ListenAndServe(":8080", httpHandler)
