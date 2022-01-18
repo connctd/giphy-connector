@@ -1,4 +1,4 @@
-# github.com/connctd/connector-go v0.0.0-20220112120231-0eadcc1fb6a3
+# github.com/connctd/connector-go v0.1.0
 ## explicit; go 1.14
 github.com/connctd/connector-go
 github.com/connctd/connector-go/connctd

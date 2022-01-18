@@ -17,7 +17,7 @@ Documentation for the SDK can be found [here](https://pkg.go.dev/github.com/conn
 See the [connector documentation](https://docs.connctd.io/connector/connectors/) and the [connctd tutorials](https://tutorial.connctd.io/) for more details on connectors, the connector protocol and the [connctd platform](https://connctd.com/).
 
 Most connectors should be able to use the default implementations and embed the default provider to only develop code specific to the connected technology.
-The default provider gives access to update and action channels which can be used by the connector to listen to updates and actions from the connectorhub and also implements methods to push updates and action results back to the connctd platform.
+The default provider gives access to update and action channels which can be used by the connector to listen to updates and actions sent by the connctd platform. It also implements methods to push updates and action results back to the connctd platform.
 Using the default implementations, developing a new connector therefore breaks down to two basic tasks:
 
   1.  Defining the things to represent the technology at the connctd platform
