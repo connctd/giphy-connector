@@ -2,6 +2,8 @@ github.com/bitly/go-hostpool v0.0.0-20171023180738-a3a6125de932/go.mod h1:NOuUCS
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dRnpXw/yCqJaO+ZrUyxD+3VXMFFr56k5XYrpB4=
 github.com/connctd/connector-go v0.1.0 h1:iYSVJN6R0ZZp4PG/yBXg033GDwrs6Khsql25JR+MkZw=
 github.com/connctd/connector-go v0.1.0/go.mod h1:y0fc81epsN3mETgHQVVaoD4WB1qTazK/v70mTM+D8y4=
+github.com/connctd/connector-go v0.3.0 h1:vApyP8/pHacW59KggawOzzOzCwNuQ65n3J34tNRRhmg=
+github.com/connctd/connector-go v0.3.0/go.mod h1:IdipWsA7tugqws9jp8+qCH96HX4ZbX0CVvIx6TumTDw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

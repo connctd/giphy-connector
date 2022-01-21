@@ -47,8 +47,19 @@ type ConnectorService interface {
 	PerformAction(ctx context.Context, request ActionRequest) (*ActionResponse, error)
 }
 
+// ThingTemplate describes the thing together with an external ID that is created for each new instance.
+// If the connector doesn't need an external ID it can be left blank.
+type ThingTemplate struct {
+	Thing      connctd.Thing
+	ExternalID string
+}
+
 // ThingTemplates is used by the default connector service to create a set of connctd.Thing for each new instantiation request.
-type ThingTemplates func(request InstantiationRequest) []connctd.Thing
+// For each template in the returned slice, the default service will:
+// - create the connctd.Thing with the connctd platform
+// - store a connector.ThingMapping{} with the instantiation request ID, the ID of the created thing and the external ID
+// - register the new thing with the provider
+type ThingTemplates func(request InstantiationRequest) []ThingTemplate
 
 // Database interface is used in the default service to persist new installations, instances, configurations and external device mappings.
 // The SDK provides a default implementation supporting Postgresql, Mysql and Sqlite3.

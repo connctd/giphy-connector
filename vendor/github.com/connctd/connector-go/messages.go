@@ -2,8 +2,9 @@ package connector
 
 import (
 	"encoding/json"
-	"github.com/connctd/connector-go/connctd"
 	"time"
+
+	"github.com/connctd/connector-go/connctd"
 )
 
 // Possible step types:
@@ -30,6 +31,17 @@ type InstallationRequest struct {
 	Token         InstallationToken `json:"token"`
 	State         InstallationState `json:"state"`
 	Configuration []Configuration   `json:"configuration"`
+}
+
+// GetConfig returns the configuration parameter with the given ID.
+// If the parameter was not found it returns false.
+func (i *InstallationRequest) GetConfig(id string) (*Configuration, bool) {
+	for _, c := range i.Configuration {
+		if c.ID == id {
+			return &c, true
+		}
+	}
+	return nil, false
 }
 
 // InstallationStateUpdateRequest can be sent by a connector to indicate new state.
@@ -62,6 +74,17 @@ type InstantiationRequest struct {
 	Token          InstantiationToken `json:"token"`
 	State          InstantiationState `json:"state"`
 	Configuration  []Configuration    `json:"configuration"`
+}
+
+// GetConfig returns the configuration parameter with the given ID.
+// If the parameter was not found it returns false.
+func (i *InstantiationRequest) GetConfig(id string) (*Configuration, bool) {
+	for _, c := range i.Configuration {
+		if c.ID == id {
+			return &c, true
+		}
+	}
+	return nil, false
 }
 
 // InstantiationResponse defines the optional response to an instantiation request.

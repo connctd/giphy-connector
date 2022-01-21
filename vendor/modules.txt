@@ -1,5 +1,5 @@
-# github.com/connctd/connector-go v0.1.0
-## explicit; go 1.14
+# github.com/connctd/connector-go v0.3.0
+## explicit; go 1.17
 github.com/connctd/connector-go
 github.com/connctd/connector-go/connctd
 github.com/connctd/connector-go/crypto

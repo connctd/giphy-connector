@@ -1,0 +1,130 @@
+2022/01/20 14: 27: 26 default_service.go: 253: "error"="failed to insert thing id: near \"instance_thing_mapping\": syntax error" "msg"="failed to insert new Thing into database" "thing"={
+    "id": "",
+    "name": "smart dec S200",
+    "manufacturer": "deconta",
+    "displayType": "core.SENSOR",
+    "mainComponentId": "measurements",
+    "status": "AVAILABLE",
+    "components": [
+        {
+            "id": "measurements",
+            "name": "Negative Pressure Unit",
+            "componentType": "core.AIR_PURIFIER",
+            "capabilities": null,
+            "properties": [
+                {
+                    "id": "powerlevel",
+                    "name": "Power Control",
+                    "value": "",
+                    "unit": "PERCENTAGE",
+                    "type": "NUMBER",
+                    "lastUpdate": "0001-01-01T00:00:00Z",
+                    "propertyType": "core.POWER_LEVEL"
+                },
+                {
+                    "id": "current",
+                    "name": "Current",
+                    "value": "",
+                    "unit": "AMPERE",
+                    "type": "STRING",
+                    "lastUpdate": "0001-01-01T00:00:00Z",
+                    "propertyType": "core.CURRENT"
+                },
+                {
+                    "id": "volumeflow",
+                    "name": "Volume Flow",
+                    "value": "",
+                    "unit": "CUBIC_METRE_PER_HOUR",
+                    "type": "STRING",
+                    "lastUpdate": "0001-01-01T00:00:00Z",
+                    "propertyType": "core.VOLUME_FLOW"
+                }
+            ]
+        },
+        {
+            "id": "control",
+            "name": "NPU Control component",
+            "componentType": "core.NPU_CONTROL",
+            "capabilities": [
+                "DIMMABLE",
+                "SWITCHABLE"
+            ],
+            "properties": [
+                {
+                    "id": "powerlevel",
+                    "name": "Control Power Level",
+                    "value": "",
+                    "unit": "",
+                    "type": "STRING",
+                    "lastUpdate": "0001-01-01T00:00:00Z",
+                    "propertyType": "core.POWER_LEVEL_CONTROL"
+                },
+                {
+                    "id": "volumeflow",
+                    "name": "Control Volume Flow",
+                    "value": "",
+                    "unit": "",
+                    "type": "STRING",
+                    "lastUpdate": "0001-01-01T00:00:00Z",
+                    "propertyType": "core.VOLUME_FLOW_CONTROL"
+                }
+            ],
+            "actions": [
+                {
+                    "id": "setControl",
+                    "name": "Generic Control Action",
+                    "parameters": [
+                        {
+                            "name": "type",
+                            "type": "STRING"
+                        },
+                        {
+                            "name": "value",
+                            "type": "STRING"
+                        }
+                    ]
+                },
+                {
+                    "id": "setDimmlevel",
+                    "name": "Dimm power level",
+                    "parameters": [
+                        {
+                            "name": "value",
+                            "type": "NUMBER"
+                        }
+                    ]
+                },
+                {
+                    "id": "setVolumeFlow",
+                    "name": "Set volume flow",
+                    "parameters": [
+                        {
+                            "name": "value",
+                            "type": "NUMBER"
+                        }
+                    ]
+                },
+                {
+                    "id": "setOn",
+                    "name": "Switch on",
+                    "parameters": [
+                        {
+                            "name": "on",
+                            "type": "BOOLEAN"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "attributes": [
+        {
+            "name": "article",
+            "value": "0754"
+        },
+        {
+            "name": "serial",
+            "value": "00130"
+        }
+    ]
+}

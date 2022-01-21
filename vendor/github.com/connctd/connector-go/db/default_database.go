@@ -52,12 +52,12 @@ var (
 	statementGetInstanceByID              = `SELECT id, token, installation_id FROM instances WHERE id = ?`
 	statementGetInstanceByThingID         = `SELECT id, token, installation_id FROM instances, (SELECT instance_id FROM instance_thing_mapping WHERE thing_id = ? LIMIT 1) mapping WHERE id = instance_id;`
 	statementGetInstances                 = `SELECT id, token, installation_id FROM instances`
-	statementInsertInstanceConfig         = `INSERT INTO instance_configuration (installation_id, id, value) VALUES (?, ?, ?)`
+	statementInsertInstanceConfig         = `INSERT INTO instance_configuration (instance_id, id, value) VALUES (?, ?, ?)`
 	statementGetConfigurationByInstanceID = `SELECT id, value FROM instance_configuration WHERE instance_id = ?`
-	statementGetThingsByInstanceID        = `SELECT thing_id FROM instance_thing_mapping WHERE instance_id = ?`
+	statementGetThingsByInstanceID        = `SELECT instance_id, thing_id, external_id FROM instance_thing_mapping WHERE instance_id = ?`
 	statementRemoveInstanceById           = `DELETE FROM instances WHERE id = ?`
 
-	statementInsertThingId = `INSERT instance_thing_mapping (instance_id, thing_id, external_id) VALUES (?, ?, ?)`
+	statementInsertThingId = `INSERT INTO instance_thing_mapping (instance_id, thing_id, external_id) VALUES (?, ?, ?)`
 )
 
 // The default database layout:

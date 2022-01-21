@@ -8,8 +8,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/connctd/connector-go/connctd"
 	"time"
+
+	"github.com/connctd/connector-go/connctd"
 
 	"github.com/connctd/connector-go"
 	"github.com/go-logr/logr"
@@ -123,8 +124,8 @@ func (s *DefaultConnectorService) AddInstance(ctx context.Context, request conne
 
 	thingTemplates := s.thingTemplates(request)
 	thingMapping := make([]connector.ThingMapping, len(thingTemplates))
-	for i, thing := range thingTemplates {
-		thing, err := s.CreateThing(ctx, request.ID, thing, "")
+	for i, template := range thingTemplates {
+		thing, err := s.CreateThing(ctx, request.ID, template.Thing, template.ExternalID)
 		if err != nil {
 			s.logger.Error(err, "Failed to create new thing")
 			return nil, err
@@ -132,6 +133,7 @@ func (s *DefaultConnectorService) AddInstance(ctx context.Context, request conne
 		thingMapping[i] = connector.ThingMapping{
 			InstanceID: request.ID,
 			ThingID:    thing.ID,
+			ExternalID: template.ExternalID,
 		}
 	}
 
